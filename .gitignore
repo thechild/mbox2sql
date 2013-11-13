@@ -4,3 +4,5 @@ manage.py
 *.sqlite3
 
 mbox
+
+db.sqlite3.old
