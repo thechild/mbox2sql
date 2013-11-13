@@ -1,14 +1,6 @@
-
+*.pyc
 manage.py
-
 *.sqlite3
-
 mbox
-
 db.sqlite3.old
-
 files/
-
-*.pyc
-
-*.pyc
