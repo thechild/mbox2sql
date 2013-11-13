@@ -6,3 +6,5 @@ manage.py
 mbox
 
 db.sqlite3.old
+
+files/
