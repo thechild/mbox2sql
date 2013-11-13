@@ -43,3 +43,6 @@ class Attachment(models.Model):
 
 def messages_with_attachments():
     return Message.objects.annotate(num_attachments=models.Count('attachments')).filter(num_attachments__gt=0)
+
+# next things to create: Conversations and Groups
+# should groups be concrete, or created on the fly?  Let's try concrete but maybe remove it later? Or shoudl I try dynamic first?
