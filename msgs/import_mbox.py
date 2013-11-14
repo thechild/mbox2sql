@@ -40,7 +40,6 @@ def parse_message(message):
     m.sent_date = datetime.fromtimestamp(mktime_tz(parsedate_tz(message['Date'])))
     m.subject = message['Subject']
     m.headers = pickle.dumps(message._headers)
-    print "Thread-Index: %s" % message['Thread-Index']
     if message['Thread-Index']:
         m.thread_index = message['Thread-Index']
 
@@ -54,6 +53,9 @@ def parse_message(message):
     for c in getaddresses(ccs):
         m.cc_recipients.add(parse_address(t))
 
+    m.save()
+
+    m.set_group_hash()
     m.save()
 
     return m

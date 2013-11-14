@@ -38,6 +38,14 @@ class Message(models.Model):
     message_id = models.CharField(max_length=200)
     related_messages = models.ManyToManyField('self')
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
+    group_hash = models.CharField(max_length=40, blank=True, null=True)
+
+    def set_group_hash(self):
+        hash_text = ''
+        for r in self.all_related_people():
+            hash_text = hash_text + str(r.id).zfill(10)
+        self.group_hash = hashlib.md5(hash_text).hexdigest()
+
     def recipient_names(self):
         names = []
         for r in self.recipients.all():
