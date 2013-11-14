@@ -1,6 +1,7 @@
 import mailbox, os, hashlib
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
+import pickle
 import models
 
 files_dir = 'files' # where to save attachments
@@ -38,7 +39,10 @@ def parse_message(message):
     m.sender = parse_address(from_text)
     m.sent_date = datetime.fromtimestamp(mktime_tz(parsedate_tz(message['Date'])))
     m.subject = message['Subject']
-    m.headers = str(message._headers)
+    m.headers = pickle.dumps(message._headers)
+    print "Thread-Index: %s" % message['Thread-Index']
+    if message['Thread-Index']:
+        m.thread_index = message['Thread-Index']
 
     m.save()
 
@@ -116,3 +120,46 @@ def parse_address(raw_address):
             address.save()
     return address
 
+# takes a Message object and connects it up to other Message objects
+def connect_related_messages(message):
+    thread_index = ''
+    references = ''
+    in_reply_to = ''
+    thread_messages = []
+    replied_message = []
+
+    # first, look for anything with the same thread-index as this message
+    # super inefficient, but here goes
+    for h in pickle.loads(message.headers):
+        title, data = h
+        if title == 'Thread-Index':
+            thread_index = data
+        elif title == 'References':
+            references = data.split('\n\t')
+        elif title == 'In-Reply-To':
+            in_reply_to = data
+
+    # find messages with the same thread index
+    if thread_index:
+        thread_messages = models.Message.objects.filter(thread_index=thread_index).exclude(id=message.id)
+
+    if in_reply_to:
+        replied_messages = models.Message.objects.filter(message_id=in_reply_to)
+        if replied_messages:
+            replied_message = replied_messages[0]
+
+    if replied_message:
+        a = "a"
+    else:
+        a = "no"
+    print "found %d references, %d thread messages, and %s replied messages" % (len(references), len(thread_messages), a)
+    for r in references:
+        refd_msg = models.Message.objects.filter(message_id=r).exclude(id=message.id)
+        if refd_msg:
+            message.related_messages.add(refd_msg[0])
+    for m in thread_messages:
+        message.related_messages.add(m)
+    if replied_message:
+        message.related_messages.add(replied_message)
+
+    message.save()

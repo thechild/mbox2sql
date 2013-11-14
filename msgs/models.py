@@ -16,15 +16,14 @@ class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
     recipients = models.ManyToManyField(Address, related_name='received_messages')
     cc_recipients = models.ManyToManyField(Address, related_name='cc_messages')
-    ## need to add CC
     subject = models.CharField(max_length=200, default='')
     sent_date = models.DateTimeField()
     headers = models.TextField()
     body_text = models.TextField()
     body_html = models.TextField()
     message_id = models.CharField(max_length=200)
-    related_message_ids = models.CharField(max_length=1000)
-    related_messages = models.ManyToManyField('self', related_name='m+')
+    related_messages = models.ManyToManyField('self')
+    thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
 
     def __unicode__(self):
         return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
@@ -46,3 +45,6 @@ def messages_with_attachments():
 
 # next things to create: Conversations and Groups
 # should groups be concrete, or created on the fly?  Let's try concrete but maybe remove it later? Or shoudl I try dynamic first?
+
+def messages_from_sender(address):
+    return Message.objects.filter(sender__address=address)
