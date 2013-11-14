@@ -1,4 +1,7 @@
 from django.db import models
+from operator import attrgetter
+from itertools import chain
+import hashlib
 
 # Create your models here.
 
@@ -7,6 +10,17 @@ class Address(models.Model):
     name = models.CharField(max_length=200)
     #person = models.ForeignKey(Person)
     # this means that right now you have to deal with addresses not people, but should have a way to combine multiple addresses into one person and operate on the person
+
+    # returns sent messages and received messages, including ccs
+    def all_messages(self):
+        msgs = sorted(
+            chain(self.sent_messages.all(),
+                self.received_messages.all(),
+                self.cc_messages.all()
+                ),
+            key=attrgetter('sent_date')
+            )
+        return msgs
 
     def __unicode__(self):
         return "%s <%s>" % (self.name, self.address)
@@ -24,6 +38,19 @@ class Message(models.Model):
     message_id = models.CharField(max_length=200)
     related_messages = models.ManyToManyField('self')
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
+    def recipient_names(self):
+        names = []
+        for r in self.recipients.all():
+            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
+        for r in self.cc_recipients.all():
+            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
+        return '\n\t'.join(names)
+
+    def all_related_people(self):
+        people = set(chain(self.recipients.all(), self.cc_recipients.all()))
+        people.add(self.sender)
+        sorted_people = sorted(people, key=attrgetter('id'))
+        return sorted_people
 
     def __unicode__(self):
         return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
