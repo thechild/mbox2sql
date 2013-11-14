@@ -60,6 +60,13 @@ class Message(models.Model):
         sorted_people = sorted(people, key=attrgetter('id'))
         return sorted_people
 
+    def all_messages_in_group(self):
+        return Message.objects.filter(group_hash=self.group_hash)
+
+    def all_messages_in_broader_group(self):
+        pass ## need to do this.  may be much easier if I drop cc_recipients and just have one recipients field in the db
+        # this should return all messages (or really conversations) that include all the recipients and senders of this message
+
     def __unicode__(self):
         return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
 
