@@ -25,14 +25,18 @@
                 {% if show_text %}
                     <pre>{{ message.body_text | safe }}</pre>
                 {% else %}
-                    {{ message.body_html | safe }}
+                    {% if message.body_html %}
+                        {{ message.body_html | safe }}
+                    {% else %}
+                        <pre>{{ message.body_text | safe }}</pre>
+                    {% endif %}
                 {% endif %}</td>
         </tr>
         <tr>
             <td colspan=2>
-                {% if show_text %}
+                {% if show_text and message.body_html %}
                 <a href="{% url 'reader:message' message.id %}">View as HTML</a>
-                {% else %}
+                {% elif message.body_html %}
                 <a href="{% url 'reader:messagetext' message.id %}">View as Text</a>
                 {% endif %}
             </td>
