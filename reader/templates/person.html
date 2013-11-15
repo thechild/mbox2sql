@@ -1,0 +1,20 @@
+<a href="{% url 'reader:home' %}">Home</a><br><br>
+<p>{{ person.name }}</p>
+<p>{{ person.address }}</p>
+{% if person.sent_messages.all %}
+<p>Sent Messages:<ul>
+    {% for message in person.sent_messages.all %}
+    <li><a href="{% url 'reader:message' message.id %}">
+        {% if message.cleaned_subject %}{{ message.cleaned_subject }}
+        {% else %}&lt;No Subject&gt;{% endif %}</a></li>
+    {% endfor %}
+</ul></p>
+{% endif %}
+{% if person.sent_attachments %}
+<p>Attached Files:<ul>
+    {% for attachment in person.sent_attachments %}
+    <li><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></li>
+    {% endfor %}
+</ul>
+</p>
+{% endif %}
