@@ -7,7 +7,7 @@ import models
 files_dir = 'files' # where to save attachments
 
 # parses all messages in an mbox file, and loads them into the database as Messages, skipping any that already are saved
-def load_messages(filename):
+def load_messages(filename='msgs/mbox'):
     mbox = mailbox.mbox(filename)
     count=0
     skip=0
@@ -73,15 +73,25 @@ def fill_in_message_content(message, content):
         for part in content.get_payload():
             message = fill_in_message_content(message, part)
     elif content.get_content_type() == 'text/plain':
-        message.body_text = content.get_payload()
+        message.body_text = unicode(content.get_payload(decode=True), encoding=get_charset(content))
     elif content.get_content_type() == 'text/html':
-        message.body_html = content.get_payload()
+        message.body_html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
     else:
         # assume it's an attachment (this may be a bad idea) and save it to disk
         message.save() # this feels a bit like cheating, but we need an id for the message now
         handle_attachment(message, content)
     return message
 
+
+def get_charset(message, default='ascii'):
+
+    if message.get_content_charset():
+        return message.get_content_charset()
+
+    if message.get_charset():
+        return message.get_charset()
+
+    return default
 
 # saves content as a file and creates an Attachment connected to message
 def handle_attachment(message, content):
