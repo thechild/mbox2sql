@@ -1,6 +1,6 @@
 <a href="{% url 'reader:home' %}">Home</a><br><br>
-<p>{{ person.name }}</p>
-<p>{{ person.address }}</p>
+<p><strong>{{ person.name }}</strong> &lt;<a href="mailto:{{ person.address }}">{{ person.address }}</a>&gt;</p>
+
 {% if person.sent_messages.all %}
 <p>Sent Messages:<ul>
     {% for message in person.sent_messages.all %}
