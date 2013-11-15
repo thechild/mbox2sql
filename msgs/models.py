@@ -22,6 +22,12 @@ class Address(models.Model):
             )
         return msgs
 
+    def sent_attachments(self):
+        attachments = []
+        for m in self.sent_messages.all():
+            attachments = attachments + list(m.attachments.all())
+        return attachments
+
     def __unicode__(self):
         return "%s <%s>" % (self.name, self.address)
 
@@ -39,6 +45,9 @@ class Message(models.Model):
     related_messages = models.ManyToManyField('self')
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
+
+    def cleaned_subject(self):
+        return self.subject.replace('re: ','').replace('Re: ','').replace('RE: ','').replace('FW: ','').replace('Fwd: ','')
 
     def set_group_hash(self):
         hash_text = ''
