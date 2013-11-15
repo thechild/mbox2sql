@@ -6,7 +6,7 @@
     {% for message in person.sent_messages.all %}
     <li><a href="{% url 'reader:message' message.id %}">
         {% if message.cleaned_subject %}{{ message.cleaned_subject }}
-        {% else %}&lt;No Subject&gt;{% endif %}</a></li>
+        {% else %}&lt;No Subject&gt;{% endif %}</a> [{{ message.sent_date }}]</li>
     {% endfor %}
 </ul></p>
 {% endif %}
