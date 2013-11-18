@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.shortcuts import render_to_response
 from msgs.models import Message, Address, Attachment
 
 # Create your views here.
@@ -13,6 +14,7 @@ def view_message(request, message_id, text=False):
     message = Message.objects.get(id=message_id)
     context = {'message': message, 'show_text': text}
     return render(request, 'message.html', context)
+    return render_to_response('message.html', {'message': message, 'show_text': text})
 
 def view_message_text(request, message_id):
     return view_message(request, message_id, text=True)
@@ -21,6 +23,7 @@ def view_person(request, person_id):
     person = Address.objects.get(id=person_id)
     context = {'person': person}
     return render(request, 'person.html', context)
+    return render_to_response('person.html', {'person': person})
 
 def view_group(request, group_hash):
     pass
