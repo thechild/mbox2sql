@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Message List {% endblock %}
+{% block title %}{{ message.cleaned_subject }}{% endblock %}
 
 {% block content %}
 {% if message %}
@@ -29,11 +29,16 @@
                     <pre>{{ message.body_text | safe }}</pre>
                 {% else %}
                     {% if message.body_html %}
+                    <div class="panel panel-default">
+                        <div class="panel-body">
                         {{ message.body_html | safe }}
+                        </div>
+                    </div>
                     {% else %}
                         <pre>{{ message.body_text | safe }}</pre>
                     {% endif %}
-                {% endif %}</td>
+                {% endif %}
+            </td>
         </tr>
         <tr>
             <td colspan=2>
