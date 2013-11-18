@@ -18,7 +18,7 @@ def message_list(request):
     except EmptyPage:
         messages = paginator.page(paginator.num_pages)
 
-    return render_to_response('message_list.html', {"message_list": messages})
+    return render_to_response('message_list.html', {"message_list": messages })
 
 def view_message(request, message_id, text=False):
     message = Message.objects.get(id=message_id)
