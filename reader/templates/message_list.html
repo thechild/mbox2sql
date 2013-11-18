@@ -1,23 +1,27 @@
-<a href="{% url 'reader:home' %}">Home</a><br><br>
+{% extends 'base.html' %}
+{% block title %}Message List {% endblock %}
+
+{% block content %}
 {% if message_list %}
-    <table>
-        <tr>
-            <td>Subject</td>
-            <td>Sender</td>
-            <td>Sent Date</td>
-            <td>Attachment?</td>
-        </tr>
+    <table class="table table-hover">
+        <thead><tr>
+            <th>Subject</th>
+            <th>Sender</th>
+            <th>Sent Date</th>
+            <th>Attachment?</th>
+        </tr></thead>
         {% for message in message_list %}
-        <tr>
+        <tbody><tr>
             <td><a href="{% url 'reader:message' message.id %}">
                 {% if message.cleaned_subject %}{{ message.cleaned_subject }}
                 {% else %}&lt;No Subject&gt;{% endif %}</a></td>
             <td><a href="{% url 'reader:person' message.sender.id %}">{{ message.sender.name }}</a></td>
             <td>{{ message.sent_date }}</td>
             <td>{{ message.attachments.count }}</td>
-        </tr>
+        </tr></tbody>
         {% endfor %}
     </table>
 {% else %}
     <p>No messages available.</p>
 {% endif %}
+{% endblock %}

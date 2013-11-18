@@ -1,4 +1,7 @@
-<a href="{% url 'reader:home' %}">Home</a><br><br>
+{% extends 'base.html' %}
+{% block title %}Message List {% endblock %}
+
+{% block content %}
 {% if message %}
     <table>
         <tr>
@@ -55,3 +58,4 @@
 {% else %}
     <p>Couldn't find message</p>
 {% endif %}
+{% endblock %}
