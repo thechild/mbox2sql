@@ -24,4 +24,16 @@
 {% else %}
     <p>No messages available.</p>
 {% endif %}
+<ul class="pagination">
+    {% if message_list.has_previous %}<li><a href="?page={{ message_list.previous_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&laquo;</a></li>
+    {% for page in message_list.paginator.page_range %}
+    <li {% if page == message_list.number %}class="active"{% endif %}><a href="?page={{ page }}">{{ page }}</a></li>
+    {% endfor %}
+    {% if message_list.has_next %}<li><a href="?page={{ message_list.next_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&raquo;</a></li>
+</ul>
+
 {% endblock %}
