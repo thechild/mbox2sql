@@ -5,5 +5,10 @@
 * combine threads - backend code is mostly there (I think) but need to update the front end to show it.
     - change the message list to only show the newest message from each thread (or each thread once) and have a column for # messages in thread
     - change the message view page to show all messages in a thread
-    - change the message view page to hide replies in the message  view (have a list of "start of next message" phrases that it can compress on - like "In Reply To" etc)
+    - change the message view page to hide replies in the message  view (have a list of "start of next message" phrases that it can compress on - like "In Reply To" etc) - https://github.com/zapier/email-reply-parser
     - change the person page to show threads the person is involved in in addition to just sent messages
+
+
+Helpful re: how MIME messages are structured: http://blog.magiksys.net/parsing-email-using-python-content
+
+I should probably change headers to be a separate table too.

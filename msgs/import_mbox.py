@@ -4,6 +4,8 @@ from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 import pickle
 import models
 
+from threadMessages import threadMessages
+
 files_dir = 'files' # where to save attachments
 
 # parses all messages in an mbox file, and loads them into the database as Messages, skipping any that already are saved
@@ -11,6 +13,7 @@ def load_messages(filename='msgs/mbox'):
     mbox = mailbox.mbox(filename)
     count=0
     skip=0
+    # first, load the messages into the database
     for message in mbox:
         m = parse_message(message)
         if m:
@@ -19,6 +22,44 @@ def load_messages(filename='msgs/mbox'):
         else:
             skip = skip + 1
     print "***Loaded %d messages, skipped %d already in db" % (count,skip)
+    # then, figure out threading
+    print "Calculating threading..."
+    setup_threads(mbox)
+
+def test():
+    mbox = mailbox.mbox('msgs/mbox')
+    setup_threads(mbox)
+
+def setup_threads(mbox):
+    threadMessages.kModuleDebug = 1
+    threadMessages.kModuleVerbose = 1
+
+    t = threadMessages.jwzThread(mbox)
+    for tree in t:
+        recurse_and_update(tree)
+
+def recurse_and_update(node, depth=0):
+    for message in node.messages:
+        print "  "*depth + message.get("subject")
+        set_parent(message, node)
+    for child in node.children:
+        recurse_and_update(child, depth+1)
+    return None
+
+def set_parent(message, node):
+    if node.parent:
+        messages_db = models.Message.objects.filter(message_id = node.messageID)
+        if messages_db.count() > 0:
+            message_db = messages_db[0]
+            # found the message, now let's see if the parent exists
+            parents_db = models.Message.objects.filter(message_id = node.parent.messageID)
+            if parents_db.count() > 0:
+                parent_db = parents_db[0]
+                #found the parent, let's link them
+                message_db.parent = parent_db
+                message_db.save()
+                print "set %s parent to be %s" % (message_db.message_id, parent_db.message_id)
+    return None
 
 # takes an email message and returns a Message object
 def parse_message(message):
@@ -42,6 +83,8 @@ def parse_message(message):
     m.headers = pickle.dumps(message._headers)
     if message['Thread-Index']:
         m.thread_index = message['Thread-Index']
+    else:
+        m.thread_index = m.message_id # TODO: this should be smarter, doesn't really work right now
 
     m.save()
 

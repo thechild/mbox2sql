@@ -1,18 +1,18 @@
 from django.shortcuts import render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from msgs.models import Message, Address, Attachment
+from msgs.models import Message, Address, Attachment, get_all_message_threads
 
 messages_per_page = 25
 
 # Create your views here.
 
 def get_default_context(request):
-    unread_message_count = Message.objects.count() ## clearly need to fix this
+    unread_message_count = len(get_all_message_threads()) ## clearly need to fix this
     context = {'unread_message_count': unread_message_count }
     return context
 
 def message_list(request):
-    message_list = Message.objects.all().order_by('-sent_date')
+    message_list = get_all_message_threads()
     paginator = Paginator(message_list, messages_per_page)
 
     page = request.GET.get('page')

@@ -8,6 +8,7 @@
             <th>Subject</th>
             <th>Sender</th>
             <th>Sent Date</th>
+            <th>Messages</th>
             <th>Attachment?</th>
         </tr></thead>
         {% for message in message_list %}
@@ -17,6 +18,7 @@
                 {% else %}&lt;No Subject&gt;{% endif %}</a></td>
             <td><a href="{% url 'reader:person' message.sender.id %}">{{ message.sender.name }}</a></td>
             <td>{{ message.sent_date }}</td>
+            <td>{{ message.thread_messages.count | add:"1" }}</td>
             <td>{{ message.attachments.count }}</td>
         </tr></tbody>
         {% endfor %}
