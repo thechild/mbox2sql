@@ -1,0 +1,57 @@
+    <table>
+        <tr>
+            <td>Subject:</td>
+            <td><strong>{{ message.cleaned_subject }}</strong></td>
+        </tr>
+        <tr>
+            <td>From:</td>
+            <td><a href="{% url 'reader:person' message.sender.id %}">{{ message.sender.name }}</a></td>
+        </tr>
+        <tr>
+            <td>To:</td>
+            <td>{{ message.recipient_names }}</td>
+        </tr>
+        <tr>
+            <td>Date:</td>
+            <td>{{ message.sent_date }}</td>
+        </tr>
+        <tr>
+            <td colspan=2>&nbsp;</td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                {% if show_text %}
+                    <pre>{{ message.body_text | safe }}</pre>
+                {% else %}
+                    {% if message.body_html %}
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                        {{ message.body_html | safe }}
+                        </div>
+                    </div>
+                    {% else %}
+                        <pre>{{ message.body_text | safe }}</pre>
+                    {% endif %}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td colspan=2>
+                {% if show_text and message.body_html %}
+                <a href="{% url 'reader:message' message.id %}">View as HTML</a>
+                {% elif message.body_html %}
+                <a href="{% url 'reader:messagetext' message.id %}">View as Text</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% if message.attachments.all %}
+        <tr>
+            <td>Attachments:</td>
+            <td>
+                {% for attachment in message.attachments.all %}
+                <p><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></p>
+                {% endfor %}
+            </td>
+        </tr>
+        {% endif %}
+    </table>

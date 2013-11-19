@@ -45,6 +45,10 @@ class Message(models.Model):
     related_messages = models.ManyToManyField('self')
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
+    parent = models.ForeignKey('self', related_name='children', blank=True, null=True, default=None)
+
+    def thread_messages(self):
+        return self.children.order_by('sent_date')
 
     def cleaned_subject(self):
         return self.subject.replace('re: ','').replace('Re: ','').replace('RE: ','').replace('FW: ','').replace('Fwd: ','')
@@ -90,6 +94,16 @@ class Attachment(models.Model):
         return self.filename
 
     # should probably override delete and actually delete the file too
+
+def get_all_message_threads():
+    messages = Message.objects.filter(parent__isnull=True).order_by('-sent_date')
+    threads = []
+    seen_threads = set()
+    for message in messages:
+        if message.thread_index not in seen_threads:
+            seen_threads.add(message.thread_index)
+            threads.append(message)
+    return threads
 
 def messages_with_attachments():
     return Message.objects.annotate(num_attachments=models.Count('attachments')).filter(num_attachments__gt=0)

@@ -5,5 +5,7 @@
 * combine threads - backend code is mostly there (I think) but need to update the front end to show it.
     - change the message list to only show the newest message from each thread (or each thread once) and have a column for # messages in thread
     - change the message view page to show all messages in a thread
-    - change the message view page to hide replies in the message  view (have a list of "start of next message" phrases that it can compress on - like "In Reply To" etc)
+    - change the message view page to hide replies in the message  view (have a list of "start of next message" phrases that it can compress on - like "In Reply To" etc) - https://github.com/zapier/email-reply-parser
     - change the person page to show threads the person is involved in in addition to just sent messages
+    - fix my threading implementation (in-reply-to better used maybe, create my own thread-id that is filled in based on the headers, or check out this: http://www.mondoinfo.com/blog/C182263547/E1428845988/index.html)
+    - as a hack, let's do it in the import for now.
