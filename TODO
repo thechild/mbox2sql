@@ -7,5 +7,8 @@
     - change the message view page to show all messages in a thread
     - change the message view page to hide replies in the message  view (have a list of "start of next message" phrases that it can compress on - like "In Reply To" etc) - https://github.com/zapier/email-reply-parser
     - change the person page to show threads the person is involved in in addition to just sent messages
-    - fix my threading implementation (in-reply-to better used maybe, create my own thread-id that is filled in based on the headers, or check out this: http://www.mondoinfo.com/blog/C182263547/E1428845988/index.html)
-    - as a hack, let's do it in the import for now.
+
+
+Helpful re: how MIME messages are structured: http://blog.magiksys.net/parsing-email-using-python-content
+
+I should probably change headers to be a separate table too.
