@@ -3,6 +3,11 @@
 
 {% block content %}
 {% if message %}
+    {% if show_text and message.body_html %}
+    <a href="{% url 'reader:message' message.id %}">View as HTML</a>
+    {% elif message.body_html %}
+    <a href="{% url 'reader:messagetext' message.id %}">View as Text</a>
+    {% endif %}
     {% include "display_message.html" %}
     {% for message in message.thread_messages.all %}
         {% include "display_message.html" %}

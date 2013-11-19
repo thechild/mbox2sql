@@ -20,27 +20,16 @@
         </tr>
         <tr>
             <td colspan=2>
-                {% if show_text %}
-                    <pre>{{ message.body_text | safe }}</pre>
+                {% if show_text or not message.body_html %}
+                    <pre>{{ message.body_reply_text | striptags }}</pre>
+                    <button type="button" data-toggle="collapse" data-target="#msgdetails{{ forloop.counter }}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-chevron-down"></span></button>
+                    <pre class="collapse" id="msgdetails{{ forloop.counter }}">{{ message.body_remaining_text | striptags }}</pre><br/>
                 {% else %}
-                    {% if message.body_html %}
                     <div class="panel panel-default">
                         <div class="panel-body">
-                        {{ message.body_html | safe }}
+                        {{ message.body_reply_html | safe }}
                         </div>
                     </div>
-                    {% else %}
-                        <pre>{{ message.body_text | safe }}</pre>
-                    {% endif %}
-                {% endif %}
-            </td>
-        </tr>
-        <tr>
-            <td colspan=2>
-                {% if show_text and message.body_html %}
-                <a href="{% url 'reader:message' message.id %}">View as HTML</a>
-                {% elif message.body_html %}
-                <a href="{% url 'reader:messagetext' message.id %}">View as Text</a>
                 {% endif %}
             </td>
         </tr>
