@@ -2,6 +2,7 @@ from django.db import models
 from operator import attrgetter
 from itertools import chain
 import hashlib
+from msgs.helpers import get_reply_from_html, get_reply_from_text
 
 # Create your models here.
 
@@ -46,6 +47,21 @@ class Message(models.Model):
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
     parent = models.ForeignKey('self', related_name='children', blank=True, null=True, default=None)
+
+    def body_reply_text(self):
+        return get_reply_from_text(self.body_text)
+
+    def body_remaining_text(self):
+        rt = self.body_reply_text()
+        a = self.body_text.find(rt)
+        if a > -1:
+            return self.body_text[a+len(rt):]
+        else:
+            return self.body_text
+
+    def body_reply_html(self):
+        print "called body_reply_html on message %d" % self.id
+        return get_reply_from_html(self.body_reply_text(), self.body_html)
 
     def thread_messages(self):
         return self.children.order_by('sent_date')
@@ -105,11 +121,5 @@ def get_all_message_threads():
             threads.append(message)
     return threads
 
-def messages_with_attachments():
-    return Message.objects.annotate(num_attachments=models.Count('attachments')).filter(num_attachments__gt=0)
-
 # next things to create: Conversations and Groups
 # should groups be concrete, or created on the fly?  Let's try concrete but maybe remove it later? Or shoudl I try dynamic first?
-
-def messages_from_sender(address):
-    return Message.objects.filter(sender__address=address)
