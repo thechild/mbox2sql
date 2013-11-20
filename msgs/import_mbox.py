@@ -80,13 +80,14 @@ def parse_message(message):
     m.sender = parse_address(from_text)
     m.sent_date = datetime.fromtimestamp(mktime_tz(parsedate_tz(message['Date'])))
     m.subject = message['Subject']
-    m.headers = pickle.dumps(message._headers)
     if message['Thread-Index']:
         m.thread_index = message['Thread-Index']
     else:
         m.thread_index = m.message_id # TODO: this should be smarter, doesn't really work right now
 
     m.save()
+
+    fill_in_headers(m, message._headers)
 
     m = fill_in_message_content(m, message)
 
@@ -102,6 +103,14 @@ def parse_message(message):
     m.save()
 
     return m
+
+def fill_in_headers(message, headers):
+    for field, text in headers:
+        nh = models.Header()
+        nh.field = field
+        nh.text = text
+        nh.message = message
+        nh.save()
 
 # tests if a message with message_id is already in the database
 def message_exists(message_id):

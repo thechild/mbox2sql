@@ -39,7 +39,6 @@ class Message(models.Model):
     cc_recipients = models.ManyToManyField(Address, related_name='cc_messages')
     subject = models.CharField(max_length=200, default='')
     sent_date = models.DateTimeField()
-    headers = models.TextField()
     body_text = models.TextField()
     body_html = models.TextField()
     message_id = models.CharField(max_length=200)
@@ -98,6 +97,14 @@ class Message(models.Model):
 
     def __unicode__(self):
         return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
+
+class Header(models.Model):
+    message = models.ForeignKey(Message, related_name="headers")
+    field = models.CharField(max_length=200)
+    text = models.TextField()
+
+    def __unicode__(self):
+        return "%s: %s" % (self.field, self.text)
 
 class Attachment(models.Model):
     filename = models.CharField(max_length=200)
