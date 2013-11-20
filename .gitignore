@@ -4,3 +4,4 @@ manage.py
 msgs/mbox
 db.sqlite3.old
 files/
+msgs/mbox2
