@@ -1,6 +1,7 @@
 import mailbox, os, hashlib
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
+from email.header import decode_header
 import pickle
 import models
 
@@ -69,7 +70,7 @@ def parse_message(message):
         print "skipping message %s - already in db" % message['Message-ID']
         return None
 
-    from_text = parseaddr(message['from'])
+    from_text = parseaddr(parse_header(message['from']))
 
     tos = message.get_all('to', [])
     ccs = message.get_all('cc', [])
@@ -79,7 +80,7 @@ def parse_message(message):
     m.message_id = message['Message-ID']
     m.sender = parse_address(from_text)
     m.sent_date = datetime.fromtimestamp(mktime_tz(parsedate_tz(message['Date'])))
-    m.subject = message['Subject']
+    m.subject = parse_header(message['Subject'])
     if message['Thread-Index']:
         m.thread_index = message['Thread-Index']
     else:
@@ -103,6 +104,12 @@ def parse_message(message):
     m.save()
 
     return m
+
+# absurd that you have to do this...
+def parse_header(subject):
+    dh = decode_header(subject)
+    default_charset = 'ASCII'
+    return ''.join([ unicode(t[0], t[1] or default_charset) for t in dh ])
 
 def fill_in_headers(message, headers):
     for field, text in headers:
@@ -128,6 +135,8 @@ def fill_in_message_content(message, content):
         message.body_text = unicode(content.get_payload(decode=True), encoding=get_charset(content))
     elif content.get_content_type() == 'text/html':
         message.body_html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+    elif 'message/' in content.get_content_type():
+        pass #ignore this for now, but should probably save as an .eml or something?
     else:
         # assume it's an attachment (this may be a bad idea) and save it to disk
         message.save() # this feels a bit like cheating, but we need an id for the message now
