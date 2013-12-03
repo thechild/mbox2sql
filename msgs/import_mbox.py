@@ -5,43 +5,53 @@ from email.header import decode_header
 import pickle
 import models
 
-from threadMessages import threadMessages
+from threadMessages import threadMessages, ccThreadMessages
 
 files_dir = 'files' # where to save attachments
 
 # parses all messages in an mbox file, and loads them into the database as Messages, skipping any that already are saved
-def load_messages(filename='msgs/mbox'):
+def load_messages(filename='msgs/mbox', thread_all=False):
     mbox = mailbox.mbox(filename)
     count=0
     skip=0
     # first, load the messages into the database
+    db_messages = [] # only run threading on the newly added messages - this
     for message in mbox:
         m = parse_message(message)
         if m:
             print m
+            db_messages.append(m)
             count = count + 1
         else:
             skip = skip + 1
     print "***Loaded %d messages, skipped %d already in db" % (count,skip)
     # then, figure out threading
     print "Calculating threading..."
-    setup_threads(mbox)
+    if thread_all:
+        setup_threads(Message.objects.all())
+    else:
+        setup_threads(db_messages)
 
-def test():
-    mbox = mailbox.mbox('msgs/mbox')
-    setup_threads(mbox)
+#################
+### THREADING ###
+#################
 
-def setup_threads(mbox):
-    threadMessages.kModuleDebug = 1
-    threadMessages.kModuleVerbose = 1
+def setup_threads(message_list=None):
+    ccThreadMessages.kModuleDebug = 1
+    ccThreadMessages.kModuleVerbose = 1
 
-    t = threadMessages.jwzThread(mbox)
+    if not message_list:
+        message_list = Message.objects.all() #default to running it on the whole set
+
+    #t = threadMessages.jwzThread(mbox) #old version
+    t = ccThreadMessages.ccThread(message_list)
+
     for tree in t:
         recurse_and_update(tree)
 
 def recurse_and_update(node, depth=0):
     for message in node.messages:
-        print "  "*depth + message.get("subject")
+        print "  "*depth + message.subject
         set_parent(message, node)
     for child in node.children:
         recurse_and_update(child, depth+1)
@@ -60,6 +70,10 @@ def set_parent(message, node):
                 message_db.parent = parent_db
                 message_db.save()
                 print "set %s parent to be %s" % (message_db.message_id, parent_db.message_id)
+            else:
+                print "couldn't find parent of %s in db [%s]" % (message_db.message_id, node.parent.messageID)
+        else:
+            print "*** couldn't find message in db [%s]" % node.messageID
     return None
 
 # takes an email message and returns a Message object
