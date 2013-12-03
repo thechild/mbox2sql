@@ -14,6 +14,15 @@
     {% endfor %}
 </ul></p>
 {% endif %}
+{% if person.all_messages %}
+<p>Conversations:<ul>
+    {% for message in person.all_messages %}
+    <li><a href="{% url 'reader:message' message.id %}">
+        {% if message.cleaned_subject %}{{ message.cleaned_subject }}
+        {% else %}&lt;No Subject&gt;{% endif %}</a> [{{ message.sent_date }}]</li>
+    {% endfor %}
+</ul></p>
+{% endif %}
 {% if person.sent_attachments %}
 <p>Attached Files:<ul>
     {% for attachment in person.sent_attachments %}
