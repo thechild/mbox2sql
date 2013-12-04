@@ -41,10 +41,8 @@ def parse_message(message):
 
     from_text = parseaddr(parse_header(message['from']))
 
-    tos = message.get_all('to', [])
-    ccs = message.get_all('cc', [])
-    tos = tos + message.get_all('resent-to', [])
-    ccs = ccs + message.get_all('resent-cc', [])
+    tos = message.get_all('to', []) + message.get_all('resent-to', [])
+    ccs = message.get_all('cc', []) + message.get_all('resent-cc', [])
 
     m.message_id = message['Message-ID']
     m.sender = parse_address(from_text)
@@ -61,15 +59,16 @@ def parse_message(message):
 
     m = fill_in_message_content(m, message)
 
+    print "have %d tos and %d ccs" % (len(tos), len(ccs))
+
     for t in getaddresses(tos):
+        print "added %s as to" % str(t)
         m.recipients.add(parse_address(t))
 
     for c in getaddresses(ccs):
-        m.cc_recipients.add(parse_address(t))
+        print "added %s as cc" % str(c)
+        m.cc_recipients.add(parse_address(c))
 
-    m.save()
-
-    m.set_group_hash()
     m.save()
 
     return m
