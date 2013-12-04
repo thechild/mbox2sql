@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads
+from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads, get_sorted_conversations
 
 messages_per_page = 25
 
@@ -12,7 +12,7 @@ def get_default_context(request):
     return context
 
 def conversation_list(request):
-    message_list = Conversation.objects.all()
+    message_list = get_sorted_conversations()
     paginator = Paginator(message_list, messages_per_page)
 
     page = request.GET.get('page')
@@ -34,6 +34,9 @@ def view_conversation(request, conversation_id, text=False):
     context.update({ 'conversation': conversation, 'show_text': text })
 
     return render_to_response('conversation.html', context)
+
+def view_conversation_text(request, conversation_id):
+    return view_conversation(request, conversation_id, text=True)
 
 def message_list(request):
     message_list = get_all_message_threads()
