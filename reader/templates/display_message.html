@@ -9,11 +9,27 @@
         </tr>
         <tr>
             <td>To:</td>
-            <td>{{ message.recipient_names }}</td>
+            <td>{% for person in message.recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} &lt;{{ person.address }}&gt;</a> {% endfor %}
+            </td>
         </tr>
+        <tr>
+            <td>CC:</td>
+            <td>{% for person in message.cc_recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} %lt;{{ person.address }}&gt;</a> {% endfor %}
+            </td>
+            </tr>
         <tr>
             <td>Date:</td>
             <td>{{ message.sent_date }}</td>
+        </tr>
+        {% comment %}
+        <tr>
+            <td>Message-ID:</td>
+            <td>{{ message.message_id }}</td>
+        </tr>
+        {% endcomment %}
+        <tr>
+            <td>ID:</td>
+            <td>{{ message.id }}</td>
         </tr>
         <tr>
             <td colspan=2>&nbsp;</td>
