@@ -33,7 +33,7 @@ class Address(models.Model):
         return "%s <%s>" % (self.name, self.address)
 
 class Conversation(models.Model):
-    creator = models.ForeignKey(Address, related_name='started_conversations')
+    creator = models.ForeignKey(Address, related_name='started_conversations', null=True)
     members = models.ManyToManyField(Address, related_name='conversations')
     subject = models.TextField()
 
