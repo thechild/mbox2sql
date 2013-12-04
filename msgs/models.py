@@ -32,8 +32,18 @@ class Address(models.Model):
     def __unicode__(self):
         return "%s <%s>" % (self.name, self.address)
 
+class Conversation(models.Model):
+    creator = models.ForeignKey(Address, related_name='started_conversations')
+    members = models.ManyToManyField(Address, related_name='conversations')
+    subject = models.TextField()
+
+    def sorted_messages(self):
+        return self.messages.order_by('-sent_date')
+
+    def __unicode__(self):
+        return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
+
 class Message(models.Model):
-    # should probably rename these sender and recipients...
     sender = models.ForeignKey(Address, related_name='sent_messages')
     recipients = models.ManyToManyField(Address, related_name='received_messages')
     cc_recipients = models.ManyToManyField(Address, related_name='cc_messages')
@@ -46,6 +56,7 @@ class Message(models.Model):
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
     parent = models.ForeignKey('self', related_name='children', blank=True, null=True, default=None)
+    conversations = models.ManyToManyField(Conversation, related_name='messages', blank=True, default=None) #should this be 1-many?
 
     def body_reply_text(self):
         return get_reply_from_text(self.body_text)
@@ -68,35 +79,14 @@ class Message(models.Model):
     def cleaned_subject(self):
         return self.subject.replace('re: ','').replace('Re: ','').replace('RE: ','').replace('FW: ','').replace('Fwd: ','')
 
-    def set_group_hash(self):
-        hash_text = ''
-        for r in self.all_related_people():
-            hash_text = hash_text + str(r.id).zfill(10)
-        self.group_hash = hashlib.md5(hash_text).hexdigest()
-
-    def recipient_names(self):
-        names = []
-        for r in self.recipients.all():
-            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
-        for r in self.cc_recipients.all():
-            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
-        return '\n\t'.join(names)
-
     def all_related_people(self):
         people = set(chain(self.recipients.all(), self.cc_recipients.all()))
         people.add(self.sender)
         sorted_people = sorted(people, key=attrgetter('id'))
         return sorted_people
 
-    def all_messages_in_group(self):
-        return Message.objects.filter(group_hash=self.group_hash)
-
-    def all_messages_in_broader_group(self):
-        pass ## need to do this.  may be much easier if I drop cc_recipients and just have one recipients field in the db
-        # this should return all messages (or really conversations) that include all the recipients and senders of this message
-
     def __unicode__(self):
-        return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
+        return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
 
 class Header(models.Model):
     message = models.ForeignKey(Message, related_name="headers")
