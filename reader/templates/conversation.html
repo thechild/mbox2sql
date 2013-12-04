@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}{{ conversation.subject }}{% endblock %}
+
+{% block content %}
+<h3>{{ conversation.subject }}</h3>
+<h4>{% for member in conversation.members.all %}<a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</h4>
+
+{% for message in conversation.sorted_messages %}
+{% include "display_message.html" %}
+{% empty %}
+<p> Couldn't find any messages in this conversation - weird </p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Conversation List {% endblock %}
+
+{% block content %}
+{% if message_list %}
+    <table class="table table-hover">
+        <thead><tr>
+            <th>Subject</th>
+            <th>People</th>
+            <th>Latest Date</th>
+            <th>Messages</th>
+            <th>Attachments</th>
+        </tr></thead>
+        {% for conversation in message_list %}
+        <tbody><tr>
+            <td><a href="{% url 'reader:conversation' conversation.id %}">
+                {% if conversation.subject %}{{ conversation.subject }}
+                {% else %}&lt;No Subject&gt;{% endif %}</a></td>
+            <td>
+                {% for member in conversation.members.all %}
+                <a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
+            </td>
+            <td>{{ conversation.latest_message.sent_date }}</td>
+            <td>{{ conversation.messages.count }}</td>
+            <td>{{ conversation.attachments.count }}</td>
+        </tr></tbody>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>No messages available.</p>
+{% endif %}
+<ul class="pagination">
+    {% if message_list.has_previous %}<li><a href="?page={{ message_list.previous_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&laquo;</a></li>
+    {% for page in message_list.paginator.page_range %}
+    <li {% if page == message_list.number %}class="active"{% endif %}><a href="?page={{ page }}">{{ page }}</a></li>
+    {% endfor %}
+    {% if message_list.has_next %}<li><a href="?page={{ message_list.next_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&raquo;</a></li>
+</ul>
+
+{% endblock %}

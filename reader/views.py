@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from msgs.models import Message, Address, Attachment, get_all_message_threads
+from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads
 
 messages_per_page = 25
 
@@ -10,6 +10,30 @@ def get_default_context(request):
     unread_message_count = len(get_all_message_threads()) ## clearly need to fix this
     context = {'unread_message_count': unread_message_count }
     return context
+
+def conversation_list(request):
+    message_list = Conversation.objects.all()
+    paginator = Paginator(message_list, messages_per_page)
+
+    page = request.GET.get('page')
+    try:
+        messages = paginator.page(page)
+    except PageNotAnInteger:
+        messages = paginator.page(1)
+    except EmptyPage:
+        messages = paginator.page(paginator.num_pages)
+
+    context = get_default_context(request)
+    context.update({'message_list': messages})
+
+    return render_to_response('conversation_list.html', context)
+
+def view_conversation(request, conversation_id, text=False):
+    conversation = Conversation.objects.get(id=conversation_id)
+    context = get_default_context(request)
+    context.update({ 'conversation': conversation, 'show_text': text })
+
+    return render_to_response('conversation.html', context)
 
 def message_list(request):
     message_list = get_all_message_threads()
