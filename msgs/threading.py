@@ -16,6 +16,7 @@ def setup_threads(message_list=None):
     t = ccThreadMessages.ccThread(message_list)
 
     for tree in t:
+        # should deal with conversations in here, but not sure how yet
         recurse_and_update(tree)
 
 def recurse_and_update(node, depth=0, default_parent=None):
