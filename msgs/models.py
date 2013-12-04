@@ -44,6 +44,7 @@ class Conversation(models.Model):
         self.messages.add(message)
         if message.sent_date > self.latest_message_date:
             self.latest_message_date = message.sent_date
+            self.save()
         for person in message.all_related_people():
             self.members.add(person)
 
@@ -61,6 +62,12 @@ class Conversation(models.Model):
         for m in self.messages.all():
             attc = attc + m.attachments.count()
         return attc
+
+    def attachments(self):
+        atts = []
+        for m in self.messages.all():
+            atts.extend(m.attachments.all())
+        return atts
 
     def __unicode__(self):
         return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
@@ -131,8 +138,8 @@ class Attachment(models.Model):
     # should probably override delete and actually delete the file too
 
 def get_sorted_conversations():
-    conversations = Conversation.objects.all()
-    conversations.sort()
+    conversations = Conversation.objects.all().order_by('-latest_message_date')
+    return conversations
 
 def get_all_message_threads():
     messages = Message.objects.filter(parent__isnull=True).order_by('-sent_date')
