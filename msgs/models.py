@@ -56,7 +56,7 @@ class Message(models.Model):
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
     parent = models.ForeignKey('self', related_name='children', blank=True, null=True, default=None)
-    conversations = models.ManyToManyField(Conversation, related_name='messages', blank=True, default=None) #should this be 1-many?
+    conversation = models.ForeignKey(Conversation, related_name='messages', blank=True, null=True, default=None)
 
     def body_reply_text(self):
         return get_reply_from_text(self.body_text)
