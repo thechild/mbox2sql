@@ -16,7 +16,7 @@ class AttachmentsInline(admin.TabularInline):
 class MessageAdmin(admin.ModelAdmin):
     readonly_fields = ('message_id', 'recipients', 'sender',)
     fields = ['message_id', 'subject', 'sender', 'recipients', 'sent_date', 'body_text']
-    list_display = ['subject', 'sender', 'recipient_names', 'sent_date']
+    list_display = ['subject', 'sender', 'sent_date']
     inlines = [ AttachmentsInline, ]
 
 class AttachmentAdmin(admin.ModelAdmin):
