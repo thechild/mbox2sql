@@ -1,5 +1,6 @@
 from models import Message, Conversation
 from threadMessages import threadMessages, ccThreadMessages
+from helpers import clean_subject
 
 #################
 ### THREADING ###
@@ -20,7 +21,7 @@ def setup_threads(message_list=None):
         if tree.messageID:
             convo = get_conversation_from_messageid(tree.messageID)
             if not convo.subject:
-                convo.subject = tree.subject
+                convo.subject = clean_subject(tree.subject)
                 convo.save()
             # should deal with conversations in here, but not sure how yet
         else:
