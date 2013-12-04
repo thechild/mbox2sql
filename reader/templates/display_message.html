@@ -14,7 +14,7 @@
         </tr>
         <tr>
             <td>CC:</td>
-            <td>{% for person in message.cc_recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} %lt;{{ person.address }}&gt;</a> {% endfor %}
+            <td>{% for person in message.cc_recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} &lt;{{ person.address }}&gt;</a> {% endfor %}
             </td>
             </tr>
         <tr>
