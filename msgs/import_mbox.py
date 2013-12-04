@@ -2,10 +2,9 @@ import mailbox, os, hashlib
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 from email.header import decode_header
-import pickle
 import models
 
-from threadMessages import threadMessages, ccThreadMessages
+from threading import setup_threads
 
 files_dir = 'files' # where to save attachments
 
@@ -28,53 +27,9 @@ def load_messages(filename='msgs/mbox', thread_all=False):
     # then, figure out threading
     print "Calculating threading..."
     if thread_all:
-        setup_threads(Message.objects.all())
+        setup_threads(models.Message.objects.all())
     else:
         setup_threads(db_messages)
-
-#################
-### THREADING ###
-#################
-
-def setup_threads(message_list=None):
-    ccThreadMessages.kModuleDebug = 1
-    ccThreadMessages.kModuleVerbose = 1
-
-    if not message_list:
-        message_list = Message.objects.all() #default to running it on the whole set
-
-    #t = threadMessages.jwzThread(mbox) #old version
-    t = ccThreadMessages.ccThread(message_list)
-
-    for tree in t:
-        recurse_and_update(tree)
-
-def recurse_and_update(node, depth=0):
-    for message in node.messages:
-        print "  "*depth + message.subject
-        set_parent(message, node)
-    for child in node.children:
-        recurse_and_update(child, depth+1)
-    return None
-
-def set_parent(message, node):
-    if node.parent:
-        messages_db = models.Message.objects.filter(message_id = node.messageID)
-        if messages_db.count() > 0:
-            message_db = messages_db[0]
-            # found the message, now let's see if the parent exists
-            parents_db = models.Message.objects.filter(message_id = node.parent.messageID)
-            if parents_db.count() > 0:
-                parent_db = parents_db[0]
-                #found the parent, let's link them
-                message_db.parent = parent_db
-                message_db.save()
-                print "set %s parent to be %s" % (message_db.message_id, parent_db.message_id)
-            else:
-                print "couldn't find parent of %s in db [%s]" % (message_db.message_id, node.parent.messageID)
-        else:
-            print "*** couldn't find message in db [%s]" % node.messageID
-    return None
 
 # takes an email message and returns a Message object
 def parse_message(message):
@@ -149,6 +104,8 @@ def fill_in_message_content(message, content):
         message.body_text = unicode(content.get_payload(decode=True), encoding=get_charset(content))
     elif content.get_content_type() == 'text/html':
         message.body_html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+    elif content.get_content_type() == 'text/enriched':
+        pass #ignore rich text for now...
     elif 'message/' in content.get_content_type():
         pass #ignore this for now, but should probably save as an .eml or something?
     else:
@@ -206,47 +163,3 @@ def parse_address(raw_address):
             address.name = text_name
             address.save()
     return address
-
-# takes a Message object and connects it up to other Message objects
-def connect_related_messages(message):
-    thread_index = ''
-    references = ''
-    in_reply_to = ''
-    thread_messages = []
-    replied_message = []
-
-    # first, look for anything with the same thread-index as this message
-    # super inefficient, but here goes
-    for h in pickle.loads(message.headers):
-        title, data = h
-        if title == 'Thread-Index':
-            thread_index = data
-        elif title == 'References':
-            references = data.split('\n\t')
-        elif title == 'In-Reply-To':
-            in_reply_to = data
-
-    # find messages with the same thread index
-    if thread_index:
-        thread_messages = models.Message.objects.filter(thread_index=thread_index).exclude(id=message.id)
-
-    if in_reply_to:
-        replied_messages = models.Message.objects.filter(message_id=in_reply_to)
-        if replied_messages:
-            replied_message = replied_messages[0]
-
-    if replied_message:
-        a = "a"
-    else:
-        a = "no"
-    print "found %d references, %d thread messages, and %s replied messages" % (len(references), len(thread_messages), a)
-    for r in references:
-        refd_msg = models.Message.objects.filter(message_id=r).exclude(id=message.id)
-        if refd_msg:
-            message.related_messages.add(refd_msg[0])
-    for m in thread_messages:
-        message.related_messages.add(m)
-    if replied_message:
-        message.related_messages.add(replied_message)
-
-    message.save()
