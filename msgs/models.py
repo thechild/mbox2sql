@@ -3,6 +3,7 @@ from operator import attrgetter
 from itertools import chain
 import hashlib
 from msgs.helpers import get_reply_from_html, get_reply_from_text
+from datetime import datetime
 
 # Create your models here.
 
@@ -36,9 +37,30 @@ class Conversation(models.Model):
     creator = models.ForeignKey(Address, related_name='started_conversations', null=True)
     members = models.ManyToManyField(Address, related_name='conversations')
     subject = models.TextField()
+    message_id = models.CharField(max_length=200)
+    latest_message_date = models.DateTimeField(default = datetime(1980, 1, 1))
+
+    def add_message(self, message):
+        self.messages.add(message)
+        if message.sent_date > self.latest_message_date:
+            self.latest_message_date = message.sent_date
+        for person in message.all_related_people():
+            self.members.add(person)
+
+    def original_message(self):
+        return self.sorted_messages()[0]
 
     def sorted_messages(self):
-        return self.messages.order_by('-sent_date')
+        return self.messages.order_by('sent_date')
+
+    def latest_message(self):
+        return self.messages.order_by('-sent_date')[0]
+
+    def attachments_count(self):
+        attc = 0
+        for m in self.messages.all():
+            attc = attc + m.attachments.count()
+        return attc
 
     def __unicode__(self):
         return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
@@ -107,6 +129,10 @@ class Attachment(models.Model):
         return self.filename
 
     # should probably override delete and actually delete the file too
+
+def get_sorted_conversations():
+    conversations = Conversation.objects.all()
+    conversations.sort()
 
 def get_all_message_threads():
     messages = Message.objects.filter(parent__isnull=True).order_by('-sent_date')
