@@ -16,13 +16,36 @@ def setup_threads(message_list=None):
     t = ccThreadMessages.ccThread(message_list)
 
     for tree in t:
-        # should deal with conversations in here, but not sure how yet
-        recurse_and_update(tree)
+        # see if a conversation already exists with the given message_id
+        if tree.messageID:
+            convo = get_conversation_from_messageid(tree.messageID)
+            if not convo.subject:
+                convo.subject = tree.subject
+                convo.save()
+            # should deal with conversations in here, but not sure how yet
+        else:
+            print "no messageID: %s" % tree
+        recurse_and_update(tree, convo)
 
-def recurse_and_update(node, depth=0, default_parent=None):
+def get_conversation_from_messageid(message_id):
+    convo = []
+    convos = Conversation.objects.filter(message_id = message_id)
+    if convos.count() == 0:
+        convo = Conversation()
+        convo.message_id = message_id
+        convo.save()
+    else:
+        convo = convos[0]
+        if convos.count() > 1:
+            print "found multiple conversations with message id: %s" % tree.messageID
+    return convo
+
+def recurse_and_update(node, conversation, depth=0, default_parent=None):
     for message in node.messages:
         print "  "*depth + "%s [%s]" % (message.subject, message.id)
         set_parent(message, node, depth, default_parent)
+        message.save()
+        conversation.add_message(message)
 
     if node.messages:
         default_parent = node.messages[0]
@@ -35,28 +58,25 @@ def recurse_and_update(node, depth=0, default_parent=None):
                 break
 
     for child in node.children:
-        recurse_and_update(child, depth+1, default_parent)
+        recurse_and_update(child, conversation, depth+1, default_parent)
     return None
 
 def set_parent(message, node, depth=0, default_parent=None):
     if node.parent:
         if node.parent.messages:
             message.parent = node.parent.messages[0]
-            message.save()
             print "  "*depth + "set %s parent to be parent %s" % (message.id, message.parent.id)
         elif node.parent.parent:
             set_parent(message, node.parent, depth, default_parent)
         else:
             if default_parent and not default_parent.id == message.id:
                 message.parent = default_parent
-                message.save()
                 print "  "*depth + "couldn't find parent message for message id %s, using default_parent %s" % (message.id, default_parent.id)
             else:
                 print "  "*depth + "well, couldn't find a default_parent either! %s" % message.id
     else:
         if default_parent:
             message.parent = default_parent
-            message.save()
             print "  "*depth + "set %s parent to be default parent %s" % (message.id, message.parent.id)
         else:
             #print "  "*depth + "message has no parent, and no default_parent"
@@ -85,6 +105,8 @@ def set_parent_old(message, node):
 #####################
 ### CONVERSATIONS ###
 #####################
+
+### this is old - use the setup_threads way instead
 
 # run this after setting up threads
 def setup_conversations(message_list=None):
