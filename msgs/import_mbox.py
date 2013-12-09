@@ -152,6 +152,8 @@ def parse_address(raw_address):
 
     text_name, text_address = raw_address
 
+    text_address = text_address.lower()
+
     address = None
     matches = models.Address.objects.filter(address=text_address)
     if len(matches) == 0:
