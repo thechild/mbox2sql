@@ -13,8 +13,22 @@ class Address(models.Model):
     #person = models.ForeignKey(Person)
     # this means that right now you have to deal with addresses not people, but should have a way to combine multiple addresses into one person and operate on the person
 
+    def newest_sent_message(self):
+        msgs = self.sent_messages.all().order_by('-sent_date')
+        if msgs:
+            return msgs[0]
+        else:
+            return None
+
+    def newest_conversation(self):
+        convos = self.conversations.order_by('-latest_message_date')
+        if convos:
+            return convos[0]
+        else:
+            return None
+
     # returns sent messages and received messages, including ccs
-    def all_messages(self):
+    def all_messages(self): # can probably make the db do this...
         msgs = sorted(
             chain(self.sent_messages.all(),
                 self.received_messages.all(),
@@ -25,10 +39,7 @@ class Address(models.Model):
         return msgs
 
     def sent_attachments(self):
-        attachments = []
-        for m in self.sent_messages.all():
-            attachments = attachments + list(m.attachments.all())
-        return attachments
+        return Attachment.objects.filter(message__sender=self).exclude(mime_related=True).order_by('-message__sent_date')
 
     def __unicode__(self):
         return "%s <%s>" % (self.name, self.address)
@@ -48,6 +59,9 @@ class Conversation(models.Model):
         for person in message.all_related_people():
             self.members.add(person)
 
+    def trimmed_members(self):
+        return self.members.exclude(address='cchild@redpoint.com') ## again, huge hack
+
     def original_message(self):
         return self.sorted_messages()[0]
 
@@ -58,16 +72,10 @@ class Conversation(models.Model):
         return self.messages.order_by('-sent_date')[0]
 
     def attachments_count(self):
-        attc = 0
-        for m in self.messages.all():
-            attc = attc + m.attachments.count()
-        return attc
+        return self.attachments().count()
 
-    def attachments(self):
-        atts = []
-        for m in self.messages.all():
-            atts.extend(m.attachments.all())
-        return atts
+    def attachments(self): # currently orders by oldest first
+        return Attachment.objects.filter(message__conversation = self).exclude(mime_related=True).order_by('message__sent_date')
 
     def __unicode__(self):
         return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
@@ -131,6 +139,7 @@ class Attachment(models.Model):
     stored_location = models.CharField(max_length=200)
     file_md5 = models.CharField(max_length=40)
     message = models.ForeignKey(Message, related_name='attachments')
+    mime_related = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.filename
@@ -151,5 +160,4 @@ def get_all_message_threads():
             threads.append(message)
     return threads
 
-# next things to create: Conversations and Groups
 # should groups be concrete, or created on the fly?  Let's try concrete but maybe remove it later? Or shoudl I try dynamic first?
