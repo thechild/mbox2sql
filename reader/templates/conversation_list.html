@@ -17,7 +17,7 @@
                 {% if conversation.subject %}{{ conversation.subject }}
                 {% else %}&lt;No Subject&gt;{% endif %}</a></strong></td>
             <td>
-                {% for member in conversation.members.all %}
+                {% for member in conversation.trimmed_members %}
                 <a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
             </td>
             <td>{{ conversation.latest_message_date }}</td>

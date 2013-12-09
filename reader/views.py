@@ -8,7 +8,9 @@ messages_per_page = 25
 
 def get_default_context(request):
     unread_message_count = len(get_all_message_threads()) ## clearly need to fix this
-    context = {'unread_message_count': unread_message_count }
+    unread_conversation_count = Conversation.objects.count() ## and this
+    context = {'unread_message_count': unread_message_count,
+               'unread_conversation_count': unread_conversation_count }
     return context
 
 def conversation_list(request):
@@ -64,6 +66,22 @@ def view_message(request, message_id, text=False):
 
 def view_message_text(request, message_id):
     return view_message(request, message_id, text=True)
+
+def people_list(request):
+    p_list = Address.objects.exclude(address='cchild@redpoint.com') # well that's a good hack
+
+    def latest_convo_date(address):
+        d = address.newest_conversation()
+        if d:
+            return d.latest_message_date
+        else:
+            return 0
+
+    sp_list = sorted(p_list, key=latest_convo_date, reverse=True) # should do this in db
+
+    context = get_default_context(request)
+    context.update({'people_list': sp_list })
+    return render_to_response('people_list.html', context)
 
 def view_person(request, person_id):
     person = Address.objects.get(id=person_id)

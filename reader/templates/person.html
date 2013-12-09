@@ -25,11 +25,22 @@
 </ul></p>
 {% endif %}
 {% if person.sent_attachments %}
-<p>Files:<ul>
-    {% for attachment in person.sent_attachments %}
-    <li><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></li>
-    {% endfor %}
-</ul>
+<p>Sent Files:
+    <table class="table">
+        <thead><tr>
+            <td class="col-md-4">File</td>
+            <td class="col-md-4">Message</td>
+            <td class="col-md-4">Date</td>
+        </tr></thead>
+
+        {% for attachment in person.sent_attachments %}
+        <tr>
+            <td><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></td>
+            <td><a href="{% url 'reader:conversation' attachment.message.conversation.id %}">{{ attachment.message.subject }}</a></td>
+            <td>{{ attachment.message.sent_date }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 </p>
 {% endif %}
 {% endblock %}
