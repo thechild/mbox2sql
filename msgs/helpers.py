@@ -9,6 +9,9 @@ def get_stripped_html_simple(text, html):
     if a > -1:
         return html[0:a+len(text)]
 
+def clean_subject(subject):
+    return subject.replace('re: ','').replace('Re: ','').replace('RE: ','').replace('FW: ','').replace('Fwd: ','')
+
 class MyHTMLParser(HTMLParser):
     search_text = ""
     found_search_text = False

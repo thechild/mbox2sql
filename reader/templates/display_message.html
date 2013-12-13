@@ -1,46 +1,78 @@
-    <table>
+{% comment %}
+<div class="row">
+    <table class="col-md-10">
         <tr>
-            <td>Subject:</td>
-            <td><strong>{{ message.cleaned_subject }}</strong></td>
-        </tr>
-        <tr>
-            <td>From:</td>
+            <td class="col-md-2">From:</td>
             <td><a href="{% url 'reader:person' message.sender.id %}">{{ message.sender.name }}</a></td>
         </tr>
+
         <tr>
-            <td>To:</td>
-            <td>{{ message.recipient_names }}</td>
+            <td class="col-md-2">To:</td>
+            <td>{% for person in message.recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} &lt;{{ person.address }}&gt;</a> {% endfor %}
+            </td>
         </tr>
         <tr>
-            <td>Date:</td>
+            <td class="col-md-2">CC:</td>
+            <td>{% for person in message.cc_recipients.all %}<a href="{% url 'reader:person' person.id %}">{{ person.name }} &lt;{{ person.address }}&gt;</a> {% endfor %}
+            </td>
+            </tr>
+        <tr>
+            <td class="col-md-2">Date:</td>
             <td>{{ message.sent_date }}</td>
+        </tr>
+        <tr>
+            <td class="col-md-2">Message-ID:</td>
+            <td>{{ message.message_id }}</td>
+        </tr>
+        <tr>
+            <td class="col-md-2">ID:</td>
+            <td>{{ message.id }}</td>
         </tr>
         <tr>
             <td colspan=2>&nbsp;</td>
         </tr>
-        <tr>
-            <td colspan=2>
-                {% if show_text or not message.body_html %}
-                    <pre>{{ message.body_reply_text | striptags }}</pre>
-                    <button type="button" data-toggle="collapse" data-target="#msgdetails{{ forloop.counter }}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-chevron-down"></span></button>
-                    <pre class="collapse" id="msgdetails{{ forloop.counter }}">{{ message.body_remaining_text | striptags }}</pre><br/>
-                {% else %}
-                    <div class="panel panel-default">
-                        <div class="panel-body">
-                        {{ message.body_reply_html | safe }}
-                        </div>
-                    </div>
-                {% endif %}
-            </td>
-        </tr>
-        {% if message.attachments.all %}
-        <tr>
-            <td>Attachments:</td>
-            <td>
-                {% for attachment in message.attachments.all %}
-                <p><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></p>
-                {% endfor %}
-            </td>
-        </tr>
-        {% endif %}
     </table>
+    <div class="col-md-2">
+                {% if message.attachments.all %}
+        <h5>Attachments</h5>
+        {% for attachment in message.attachments.all %}
+            <p><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></p>
+        {% endfor %}
+        {% endif %}
+    </div>
+</div>
+{% endcomment %}
+
+<div class="row">
+    <div class="col-md-8">
+        <h5>
+            <button type="button" data-toggle="collapse" data-target="#msgbody{{ forloop.counter }}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-chevron-down"></span></button>
+            <a href="{% url 'reader:person' message.sender.id %}">{{ message.sender.name }}</a><span class="pull-right">{{ message.sent_date }}</span></h5>
+        <span id="msgbody{{ forloop.counter }}" class="collapse">
+        {% if show_text or not message.body_html %}
+            <pre>{{ message.body_reply_text | striptags }}</pre>
+            <button type="button" data-toggle="collapse" data-target="#msgdetails{{ forloop.counter }}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-chevron-down"></span></button>
+            <pre class="collapse" id="msgdetails{{ forloop.counter }}">{{ message.body_remaining_text | striptags }}</pre><br/>
+        {% else %}
+            <div class="panel panel-default">
+                <div class="panel-body">
+                {{ message.body_reply_html | safe }}
+                </div>
+            </div>
+        {% endif %}
+        </span>
+    </div>
+    <div class="col-md-4">
+        <h5>Recipients</h5>
+        <p>
+        {% for person in message.recipients.all %}
+            <a href="{% url 'reader:person' person.id %}">
+                {% if person.name %}{{ person.name }}{% else %}{{ person.address}}{% endif %}</a>{% if forloop.last and not message.cc_recipients.all %}{% else %}, {% endif %}
+        {% endfor %}
+        {% for person in message.cc_recipients.all %}
+            <a href="{% url 'reader:person' person.id %}">
+                {% if person.name %}{{ person.name }}{% else %}{{ person.address}}{% endif %}</a>{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+        </p>
+    </div>
+</div>

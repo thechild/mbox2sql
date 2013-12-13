@@ -2,10 +2,9 @@ import mailbox, os, hashlib
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 from email.header import decode_header
-import pickle
 import models
 
-from threadMessages import threadMessages, ccThreadMessages
+from threading import setup_threads
 
 files_dir = 'files' # where to save attachments
 
@@ -28,53 +27,9 @@ def load_messages(filename='msgs/mbox', thread_all=False):
     # then, figure out threading
     print "Calculating threading..."
     if thread_all:
-        setup_threads(Message.objects.all())
+        setup_threads(models.Message.objects.all())
     else:
         setup_threads(db_messages)
-
-#################
-### THREADING ###
-#################
-
-def setup_threads(message_list=None):
-    ccThreadMessages.kModuleDebug = 1
-    ccThreadMessages.kModuleVerbose = 1
-
-    if not message_list:
-        message_list = Message.objects.all() #default to running it on the whole set
-
-    #t = threadMessages.jwzThread(mbox) #old version
-    t = ccThreadMessages.ccThread(message_list)
-
-    for tree in t:
-        recurse_and_update(tree)
-
-def recurse_and_update(node, depth=0):
-    for message in node.messages:
-        print "  "*depth + message.subject
-        set_parent(message, node)
-    for child in node.children:
-        recurse_and_update(child, depth+1)
-    return None
-
-def set_parent(message, node):
-    if node.parent:
-        messages_db = models.Message.objects.filter(message_id = node.messageID)
-        if messages_db.count() > 0:
-            message_db = messages_db[0]
-            # found the message, now let's see if the parent exists
-            parents_db = models.Message.objects.filter(message_id = node.parent.messageID)
-            if parents_db.count() > 0:
-                parent_db = parents_db[0]
-                #found the parent, let's link them
-                message_db.parent = parent_db
-                message_db.save()
-                print "set %s parent to be %s" % (message_db.message_id, parent_db.message_id)
-            else:
-                print "couldn't find parent of %s in db [%s]" % (message_db.message_id, node.parent.messageID)
-        else:
-            print "*** couldn't find message in db [%s]" % node.messageID
-    return None
 
 # takes an email message and returns a Message object
 def parse_message(message):
@@ -86,10 +41,8 @@ def parse_message(message):
 
     from_text = parseaddr(parse_header(message['from']))
 
-    tos = message.get_all('to', [])
-    ccs = message.get_all('cc', [])
-    tos = tos + message.get_all('resent-to', [])
-    ccs = ccs + message.get_all('resent-cc', [])
+    tos = message.get_all('to', []) + message.get_all('resent-to', [])
+    ccs = message.get_all('cc', []) + message.get_all('resent-cc', [])
 
     m.message_id = message['Message-ID']
     m.sender = parse_address(from_text)
@@ -106,15 +59,16 @@ def parse_message(message):
 
     m = fill_in_message_content(m, message)
 
+    print "have %d tos and %d ccs" % (len(tos), len(ccs))
+
     for t in getaddresses(tos):
+        print "added %s as to" % str(t)
         m.recipients.add(parse_address(t))
 
     for c in getaddresses(ccs):
-        m.cc_recipients.add(parse_address(t))
+        print "added %s as cc" % str(c)
+        m.cc_recipients.add(parse_address(c))
 
-    m.save()
-
-    m.set_group_hash()
     m.save()
 
     return m
@@ -141,20 +95,25 @@ def message_exists(message_id):
 # doesn't handle multiple text or html parts well right now - just takes the first one - could just do an append?
 # if encounters multipart content, it recurses on all the parts
 # if Content-Type is not multipart/alternative, multipart/mixed, multipart/related, text/plain or text/html, assumes it's an attachment and reacts accordingly
-def fill_in_message_content(message, content):
-    if content.get_content_type() in ('multipart/alternative', 'multipart/mixed', 'multipart/related'):
+def fill_in_message_content(message, content, related=False):
+    if content.get_content_type() == 'multipart/related':
+        for part in content.get_payload():
+            message = fill_in_message_content(message, part, related=True)
+    elif content.get_content_type() in ('multipart/alternative', 'multipart/mixed'):
         for part in content.get_payload():
             message = fill_in_message_content(message, part)
     elif content.get_content_type() == 'text/plain':
         message.body_text = unicode(content.get_payload(decode=True), encoding=get_charset(content))
     elif content.get_content_type() == 'text/html':
         message.body_html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+    elif content.get_content_type() == 'text/enriched':
+        pass #ignore rich text for now...
     elif 'message/' in content.get_content_type():
         pass #ignore this for now, but should probably save as an .eml or something?
     else:
         # assume it's an attachment (this may be a bad idea) and save it to disk
         message.save() # this feels a bit like cheating, but we need an id for the message now
-        handle_attachment(message, content)
+        handle_attachment(message, content, related)
     return message
 
 
@@ -169,12 +128,13 @@ def get_charset(message, default='ascii'):
     return default
 
 # saves content as a file and creates an Attachment connected to message
-def handle_attachment(message, content):
+def handle_attachment(message, content, related):
     print "saving attachment of type %s from message %d " % (content.get_content_type(), message.id)
     a = models.Attachment()
     a.filename = content.get_filename()
     a.content_type = content.get_content_type()
     a.stored_location = os.path.join(files_dir, str(message.id), a.filename) # probably want to fix this too
+    a.mime_related = related
     # load the file
     file_content = content.get_payload(decode=1)
     a.file_md5 = hashlib.md5(file_content).hexdigest() # again, probably a better way to do this than all in memory
@@ -192,6 +152,8 @@ def parse_address(raw_address):
 
     text_name, text_address = raw_address
 
+    text_address = text_address.lower()
+
     address = None
     matches = models.Address.objects.filter(address=text_address)
     if len(matches) == 0:
@@ -206,47 +168,3 @@ def parse_address(raw_address):
             address.name = text_name
             address.save()
     return address
-
-# takes a Message object and connects it up to other Message objects
-def connect_related_messages(message):
-    thread_index = ''
-    references = ''
-    in_reply_to = ''
-    thread_messages = []
-    replied_message = []
-
-    # first, look for anything with the same thread-index as this message
-    # super inefficient, but here goes
-    for h in pickle.loads(message.headers):
-        title, data = h
-        if title == 'Thread-Index':
-            thread_index = data
-        elif title == 'References':
-            references = data.split('\n\t')
-        elif title == 'In-Reply-To':
-            in_reply_to = data
-
-    # find messages with the same thread index
-    if thread_index:
-        thread_messages = models.Message.objects.filter(thread_index=thread_index).exclude(id=message.id)
-
-    if in_reply_to:
-        replied_messages = models.Message.objects.filter(message_id=in_reply_to)
-        if replied_messages:
-            replied_message = replied_messages[0]
-
-    if replied_message:
-        a = "a"
-    else:
-        a = "no"
-    print "found %d references, %d thread messages, and %s replied messages" % (len(references), len(thread_messages), a)
-    for r in references:
-        refd_msg = models.Message.objects.filter(message_id=r).exclude(id=message.id)
-        if refd_msg:
-            message.related_messages.add(refd_msg[0])
-    for m in thread_messages:
-        message.related_messages.add(m)
-    if replied_message:
-        message.related_messages.add(replied_message)
-
-    message.save()

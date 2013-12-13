@@ -3,6 +3,7 @@ from operator import attrgetter
 from itertools import chain
 import hashlib
 from msgs.helpers import get_reply_from_html, get_reply_from_text
+from datetime import datetime
 
 # Create your models here.
 
@@ -12,8 +13,22 @@ class Address(models.Model):
     #person = models.ForeignKey(Person)
     # this means that right now you have to deal with addresses not people, but should have a way to combine multiple addresses into one person and operate on the person
 
+    def newest_sent_message(self):
+        msgs = self.sent_messages.all().order_by('-sent_date')
+        if msgs:
+            return msgs[0]
+        else:
+            return None
+
+    def newest_conversation(self):
+        convos = self.conversations.order_by('-latest_message_date')
+        if convos:
+            return convos[0]
+        else:
+            return None
+
     # returns sent messages and received messages, including ccs
-    def all_messages(self):
+    def all_messages(self): # can probably make the db do this...
         msgs = sorted(
             chain(self.sent_messages.all(),
                 self.received_messages.all(),
@@ -24,16 +39,48 @@ class Address(models.Model):
         return msgs
 
     def sent_attachments(self):
-        attachments = []
-        for m in self.sent_messages.all():
-            attachments = attachments + list(m.attachments.all())
-        return attachments
+        return Attachment.objects.filter(message__sender=self).exclude(mime_related=True).order_by('-message__sent_date')
 
     def __unicode__(self):
         return "%s <%s>" % (self.name, self.address)
 
+class Conversation(models.Model):
+    creator = models.ForeignKey(Address, related_name='started_conversations', null=True)
+    members = models.ManyToManyField(Address, related_name='conversations')
+    subject = models.TextField()
+    message_id = models.CharField(max_length=200)
+    latest_message_date = models.DateTimeField(default = datetime(1980, 1, 1))
+
+    def add_message(self, message):
+        self.messages.add(message)
+        if message.sent_date > self.latest_message_date:
+            self.latest_message_date = message.sent_date
+            self.save()
+        for person in message.all_related_people():
+            self.members.add(person)
+
+    def trimmed_members(self):
+        return self.members.exclude(address='cchild@redpoint.com') ## again, huge hack
+
+    def original_message(self):
+        return self.sorted_messages()[0]
+
+    def sorted_messages(self):
+        return self.messages.order_by('sent_date')
+
+    def latest_message(self):
+        return self.messages.order_by('-sent_date')[0]
+
+    def attachments_count(self):
+        return self.attachments().count()
+
+    def attachments(self): # currently orders by oldest first
+        return Attachment.objects.filter(message__conversation = self).exclude(mime_related=True).order_by('message__sent_date')
+
+    def __unicode__(self):
+        return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
+
 class Message(models.Model):
-    # should probably rename these sender and recipients...
     sender = models.ForeignKey(Address, related_name='sent_messages')
     recipients = models.ManyToManyField(Address, related_name='received_messages')
     cc_recipients = models.ManyToManyField(Address, related_name='cc_messages')
@@ -46,6 +93,7 @@ class Message(models.Model):
     thread_index = models.CharField(max_length=200, blank=True, null=True, default=None)
     group_hash = models.CharField(max_length=40, blank=True, null=True)
     parent = models.ForeignKey('self', related_name='children', blank=True, null=True, default=None)
+    conversation = models.ForeignKey(Conversation, related_name='messages', blank=True, null=True, default=None)
 
     def body_reply_text(self):
         return get_reply_from_text(self.body_text)
@@ -68,35 +116,14 @@ class Message(models.Model):
     def cleaned_subject(self):
         return self.subject.replace('re: ','').replace('Re: ','').replace('RE: ','').replace('FW: ','').replace('Fwd: ','')
 
-    def set_group_hash(self):
-        hash_text = ''
-        for r in self.all_related_people():
-            hash_text = hash_text + str(r.id).zfill(10)
-        self.group_hash = hashlib.md5(hash_text).hexdigest()
-
-    def recipient_names(self):
-        names = []
-        for r in self.recipients.all():
-            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
-        for r in self.cc_recipients.all():
-            names.append(str.format('%s <%s>' % (str(r.name), str(r.address))))
-        return '\n\t'.join(names)
-
     def all_related_people(self):
         people = set(chain(self.recipients.all(), self.cc_recipients.all()))
         people.add(self.sender)
         sorted_people = sorted(people, key=attrgetter('id'))
         return sorted_people
 
-    def all_messages_in_group(self):
-        return Message.objects.filter(group_hash=self.group_hash)
-
-    def all_messages_in_broader_group(self):
-        pass ## need to do this.  may be much easier if I drop cc_recipients and just have one recipients field in the db
-        # this should return all messages (or really conversations) that include all the recipients and senders of this message
-
     def __unicode__(self):
-        return "<%s> Subject: %s From: %s To: %s" % (self.message_id, self.subject, self.sender, self.recipients.all())
+        return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
 
 class Header(models.Model):
     message = models.ForeignKey(Message, related_name="headers")
@@ -112,11 +139,16 @@ class Attachment(models.Model):
     stored_location = models.CharField(max_length=200)
     file_md5 = models.CharField(max_length=40)
     message = models.ForeignKey(Message, related_name='attachments')
+    mime_related = models.BooleanField(default=False)
 
     def __unicode__(self):
         return self.filename
 
     # should probably override delete and actually delete the file too
+
+def get_sorted_conversations():
+    conversations = Conversation.objects.all().order_by('-latest_message_date')
+    return conversations
 
 def get_all_message_threads():
     messages = Message.objects.filter(parent__isnull=True).order_by('-sent_date')
@@ -128,5 +160,4 @@ def get_all_message_threads():
             threads.append(message)
     return threads
 
-# next things to create: Conversations and Groups
 # should groups be concrete, or created on the fly?  Let's try concrete but maybe remove it later? Or shoudl I try dynamic first?

@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block title %}People List {% endblock %}
+
+{% block content %}
+{% if people_list %}
+<table class="table table-hover col-md-12">
+    <thead><tr>
+        <th class="col-md-4">Name</th>
+        <th class="col-md-4">Address</th>
+        <th class="col-md-2">Conversations</th>
+        <th class="col-md-2">Latest Activity</th>
+    </tr></thead>
+    <tbody>
+        {% for person in people_list %}
+        <tr>
+            <td><a href="{% url 'reader:person' person.id %}">{{ person.name }} __</a></td>
+            <td><a href="mailto:{{ person.address }}">{{ person.address }}</a></td>
+            <td>{{ person.conversations.count }}</td>
+            <td>{% if person.newest_conversation %}{{ person.newest_conversation.latest_message_date }}{% else %}-{% endif %}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endif %}
+
+{% comment %}
+<ul class="pagination">
+    {% if message_list.has_previous %}<li><a href="?page={{ message_list.previous_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&laquo;</a></li>
+    {% for page in message_list.paginator.page_range %}
+    <li {% if page == message_list.number %}class="active"{% endif %}><a href="?page={{ page }}">{{ page }}</a></li>
+    {% endfor %}
+    {% if message_list.has_next %}<li><a href="?page={{ message_list.next_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&raquo;</a></li>
+</ul>
+{% endcomment %}
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ conversation.subject }}{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <h3>{% if conversation.subject %}{{ conversation.subject }}{% else %}&lt;No Subject&gt;{% endif %}</h3>
+            <h4>{% for member in conversation.members.all %}<a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}</h4>
+            <hr>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-9">
+            {% for message in conversation.sorted_messages %}
+                {% include "display_message.html" %}
+            {% empty %}
+                <p> Couldn't find any messages in this conversation - weird </p>
+            {% endfor %}
+        </div>
+        <div class="col-md-3">
+            <h5>Attachments</h5>
+            {% for attachment in conversation.attachments %}
+            <p><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
