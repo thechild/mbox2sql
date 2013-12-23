@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}Group{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-3">
+        <h4>Members</h4>
+    </div>
+    <div class="col-md-6">
+        <h4>Conversations</h4>
+    </div>
+    <div class="col-md-3">
+        <h4>Files</h4>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-3">
+        <table class="table">
+            {% for member in group.members %}
+            <tr>
+                <td><a href="{% url 'reader:person' member.id %}">{{ member.name }}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-6">
+        <table class="table">
+            {% for conversation in group.conversations %}
+            <tr>
+                <td><a href="{% url 'reader:conversation' conversation.id %}">{{ conversation.subject }}</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-3">
+        <table class="table">
+            {% for file in group.attachments %}
+            <tr>
+                <td>{{ file.filename }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td>&nbsp;</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}
