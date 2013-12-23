@@ -9,6 +9,7 @@ urlpatterns = patterns('',
     url(r'conversation/(?P<conversation_id>\d+)/$', views.view_conversation, name="conversation"),
     url(r'conversation/(?P<conversation_id>\d+)/text$', views.view_conversation_text, name="conversationtext"),
     url(r'person/(?P<person_id>\d+)/$', views.view_person, name="person"),
-    url(r'group/(?P<group_hash>\d+)/$', views.view_group, name="group"),
     url(r'people/$', views.people_list, name='people_list'),
+    url(r'group/(?P<group_id>\d+)/$', views.view_group, name="view_group"),
+    url(r'g/$', views.group_list, name='ghome'),
     )

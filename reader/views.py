@@ -1,6 +1,7 @@
 from django.shortcuts import render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads, get_sorted_conversations
+from msgs.groups import Group, group_from_url_representation, groups_including_person, group_from_conversation
 
 messages_per_page = 25
 
@@ -89,5 +90,17 @@ def view_person(request, person_id):
     context.update({ 'person': person })
     return render_to_response('person.html', context)
 
-def view_group(request, group_hash):
-    pass
+def group_list(request):
+    person = Address.objects.get(address="cchild@redpoint.com") # how's that for a hard code
+    groups = groups_including_person(person)
+    context = get_default_context(request)
+    context.update({ 'groups': groups })
+    return render_to_response('group_list.html', context)
+
+def view_group(request, group_id):
+    group = group_from_conversation(Conversation.objects.get(id=group_id))
+    #group = group_from_url_representation(group_members)
+    context = get_default_context(request)
+    context.update({ 'group': group })
+    return render_to_response('view_group.html', context)
+
