@@ -23,6 +23,7 @@
         <ul class="nav navbar-nav">
           <li><a href="{% url 'reader:home' %}">Messages <span class="badge">{{ unread_message_count }}</span></a></li>
           <li><a href="{% url 'reader:chome' %}">Conversations <span class="badge">{{ unread_conversation_count }}</span></a></li>
+          <li><a href="{% url 'reader:ghome' %}">Groups <span class="badge">{{ unread_conversation_count }}</span></a></li>
           <li><a href="{% url 'reader:people_list' %}">People</a></li>
         </ul>
 
