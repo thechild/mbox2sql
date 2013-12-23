@@ -5,23 +5,30 @@
 {% if groups %}
     <table class="table table-hover col-md-12">
         <thead><tr>
+            <th class="col-md-1">Group</th>
             <th class="col-md-5">Subjects</th>
-            <th class="col-md-3">People</th>
+            <th class="col-md-4">People</th>
             <th class="col-md-2">Latest Date</th>
-            <th class="col-md-1">Messages</th>
-            <th class="col-md-1">Attachments</th>
+            <!--<th class="col-md-1">Messages</th>
+            <th class="col-md-1">Attachments</th>-->
         </tr></thead>
         {% for group in groups %}
         <tbody><tr>
-            <td><strong><a href="{% url 'reader:view_group' group.url_representation %}">
-                {{ group.first_conversation.subject }}</strong></td>
+            <td>
+                <a href="{% url 'reader:view_group' group.url_representation %}">Group</a>
+            </td>
+            <td>
+                {% for conversation in group.conversations %}
+                <p><strong><a href="{% url 'reader:conversation' conversation.id %}">{{ conversation.subject }}</a></strong></p>
+                {% endfor %}
+            </td>
             <td>
                 {% for member in group.other_members %}
                 <a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}
             </td>
             <td>{{ group.first_conversation.latest_message_date }}</td>
-            <td>{{ group.conversations.count }}</td>
-            <td>{{ group.attachments_count }}</td>
+            <!--<td>{{ group.conversations.count }}</td>
+            <td>{{ group.attachments_count }}</td>-->
         </tr></tbody>
         {% endfor %}
     </table>
