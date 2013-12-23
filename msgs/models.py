@@ -122,6 +122,9 @@ class Message(models.Model):
         sorted_people = sorted(people, key=attrgetter('id'))
         return sorted_people
 
+    def snippet(self):
+        return self.body_text[:75]
+
     def __unicode__(self):
         return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
 
