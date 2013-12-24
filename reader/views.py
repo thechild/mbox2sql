@@ -7,6 +7,19 @@ messages_per_page = 25
 
 # Create your views here.
 
+def raw_message(request, message_id, text=False):
+    message = Message.objects.get(id=message_id)
+    context = get_default_context(request)
+    raw_text = message.body_html
+    if text or not message.body_html:
+        raw_text = message.body_text
+        text = True
+    context.update({ 'raw_text': raw_text, 'pre': text })
+    return render_to_response('raw_message.html', context)
+
+def raw_message_text(request, message_id):
+    return raw_message(request, message_id, text=True)
+
 def get_default_context(request):
     unread_message_count = len(get_all_message_threads()) ## clearly need to fix this
     unread_conversation_count = Conversation.objects.count() ## and this
