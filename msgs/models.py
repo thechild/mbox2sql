@@ -66,7 +66,7 @@ class Conversation(models.Model):
         return self.sorted_messages()[0]
 
     def sorted_messages(self):
-        return self.messages.order_by('sent_date')
+        return self.messages.order_by('-sent_date')
 
     def latest_message(self):
         return self.messages.order_by('-sent_date')[0]
@@ -154,7 +154,7 @@ def get_current_user():
     return Address.objects.get(address='cchild@redpoint.com')
 
 def get_sorted_conversations():
-    conversations = Conversation.objects.filter(recipients=get_current_user()).order_by('-latest_message_date')
+    conversations = Conversation.objects.filter(members=get_current_user()).order_by('-latest_message_date')
     return conversations
 
 def get_all_message_threads():
