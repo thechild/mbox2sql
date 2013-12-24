@@ -123,7 +123,7 @@ class Message(models.Model):
         return sorted_people
 
     def snippet(self):
-        return self.body_text[:75]
+        return self.body_reply_text()[:75]
 
     def __unicode__(self):
         return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
@@ -149,12 +149,16 @@ class Attachment(models.Model):
 
     # should probably override delete and actually delete the file too
 
+def get_current_user():
+    # obviously a hack
+    return Address.objects.get(address='cchild@redpoint.com')
+
 def get_sorted_conversations():
-    conversations = Conversation.objects.all().order_by('-latest_message_date')
+    conversations = Conversation.objects.filter(recipients=get_current_user()).order_by('-latest_message_date')
     return conversations
 
 def get_all_message_threads():
-    messages = Message.objects.filter(parent__isnull=True).order_by('-sent_date')
+    messages = Message.objects.filter(recipients=get_current_user()).filter(parent__isnull=True).order_by('-sent_date')
     threads = []
     seen_threads = set()
     for message in messages:

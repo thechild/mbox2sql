@@ -20,6 +20,7 @@ class Group():
             conversations = Conversation.objects
             for member in self.members:
                 conversations = conversations.filter(members=member)
+        conversations.order_by('-latest_message_date')
         return conversations
 
     ### return all conversations involving ONLY the members ###
@@ -47,6 +48,15 @@ class Group():
     #    ids = map(lambda a: a.id, self.members)
     #    return pickle.dumps(ids)
         return self.first_conversation().id
+
+    # well that's inefficient
+    def __eq__(self, other):
+        if len(self.members) <> len(other.members):
+            return False
+        for m in self.members:
+            if m not in other.members:
+                return False
+        return True
 
     def __unicode__(self):
         return "<Group: %s>" % str(self.members)
@@ -87,4 +97,5 @@ def groups_including_person(person):
         group = Group(convo.members.all(), person)
         if group not in groups:
             groups.append(group)
+    groups.sort(key=lambda group: group.first_conversation().latest_message_date, reverse=True)
     return groups

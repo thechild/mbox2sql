@@ -20,6 +20,7 @@
             <td>
                 {% for conversation in group.conversations %}
                 <p><strong><a href="{% url 'reader:conversation' conversation.id %}">{{ conversation.subject }}</a></strong></p>
+                {% if forloop.first %}<p>{{ conversation.latest_message.sender.name }}: {{ conversation.latest_message.snippet }}</p>{% endif %}
                 {% endfor %}
             </td>
             <td>
