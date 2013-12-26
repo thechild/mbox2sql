@@ -11,19 +11,6 @@
             {% else %}
             <iframe style="border: 5px black;" src="{% url 'reader:raw_message' message.id %}" height=250 width=100%></iframe>
             {% endif %}
-{% comment %}
-        {% if show_text or not message.body_html %}
-            <pre>{{ message.body_reply_text | striptags }}</pre>
-            <button type="button" data-toggle="collapse" data-target="#msgdetails{{ forloop.counter }}" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-chevron-down"></span></button>
-            <pre class="collapse" id="msgdetails{{ forloop.counter }}">{{ message.body_remaining_text | striptags }}</pre><br/>
-        {% else %}
-            <div class="panel panel-default">
-                <div class="panel-body">
-                {{ message.body_reply_html | safe }}
-                </div>
-            </div>
-        {% endif %}
-{% endcomment %}
         </span>
     </div>
     <div class="col-md-4">

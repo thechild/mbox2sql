@@ -32,10 +32,8 @@ class Address(models.Model):
         msgs = sorted(
             chain(self.sent_messages.all(),
                 self.received_messages.all(),
-                self.cc_messages.all()
-                ),
-            key=attrgetter('sent_date')
-            )
+                self.cc_messages.all()),
+            key=attrgetter('sent_date'))
         return msgs
 
     def sent_attachments(self):
