@@ -86,4 +86,5 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = (
     ('css', '/Users/cchild/Sites/mbox/static/css'),
     ('js', '/Users/cchild/Sites/mbox/static/js'),
+    ('fonts', '/Users/cchild/Sites/mbox/static/fonts'),
 )
