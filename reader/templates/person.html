@@ -3,44 +3,43 @@
 
 {% block content %}
 
-<h3>{{ person.name }}</h3>
-<h4><a href="mailto:{{ person.address }}">{{ person.address }}</a></h4>
-<hr>
-{% if person.sent_messages.all %}
-<p>Sent Messages:<ul>
-    {% for message in person.sent_messages.all %}
-    <li><a href="{% url 'reader:message' message.id %}">
-        {% if message.cleaned_subject %}{{ message.cleaned_subject }}
-        {% else %}&lt;No Subject&gt;{% endif %}</a> [{{ message.sent_date }}]</li>
-    {% endfor %}
-</ul></p>
-{% endif %}
-{% if person.conversations %}
-<p>Conversations:<ul>
-    {% for conversation in person.conversations.all %}
-    <li><a href="{% url 'reader:conversation' conversation.id %}">
-        {% if conversation.subject %}{{ conversation.subject }}
-        {% else %}&lt;No Subject&gt;{% endif %}</a> [{{ conversation.latest_message_date }}]</li>
-    {% endfor %}
-</ul></p>
-{% endif %}
-{% if person.sent_attachments %}
-<p>Sent Files:
-    <table class="table">
-        <thead><tr>
-            <td class="col-md-4">File</td>
-            <td class="col-md-4">Message</td>
-            <td class="col-md-4">Date</td>
-        </tr></thead>
+<div class="row">
+    <div class="col-sm-12">
+        <h3>{{ person.name }}</h3>
+        <h4><a href="mailto:{{ person.address }}">{{ person.address }}</a></h4>
+        <hr>
+    </div>
+</div>
 
-        {% for attachment in person.sent_attachments %}
-        <tr>
-            <td><a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a></td>
-            <td><a href="{% url 'reader:conversation' attachment.message.conversation.id %}">{{ attachment.message.subject }}</a></td>
-            <td>{{ attachment.message.sent_date }}</td>
-        </tr>
+<div class="row">
+    <div class="col-md-8"><h5>Conversations</h5></div>
+    <div class="col-md-4"><h5>Files</h5></div>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        {% for conversation in person.conversations.all %}
+        <div class="row">
+            <div class="col-md-8">
+                <a href="{% url 'reader:conversation' conversation.id %}">
+                    {% if conversation.subject %}{{ conversation.subject }}
+                    {% else %}&lt;No Subject&gt;{% endif %}</a>
+            </div>
+            <div class="col-md-4">
+                {{ conversation.latest_message_date }}
+            </div>
+        </div>
         {% endfor %}
-    </table>
-</p>
-{% endif %}
+    </div>
+    <div class="col-md-4">
+        {% for attachment in person.sent_attachments %}
+        <div class="row">
+            <div class="col-md-12">
+                <a href="/{{ attachment.stored_location }}">{{ attachment.filename }}</a>
+            </div>
+        </div>
+        {% empty %}
+        &lt;No Files&gt;
+        {% endfor %}
+    </div>
+</div>
 {% endblock %}

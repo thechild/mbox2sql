@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Group{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-md-12">
+        <!-- Group Name -->
+        <h3>An Awesome Group</h3>
+        <h7>{% for member in group.members %}<a href="{% url 'reader:person' member.id %}">{{ member.name }}</a>{% if not forloop.last %}; {% endif %}{% endfor %}</h7>
+        <hr>
+    </div>
+</div>
+
+
+<div class="row">
+    <div class="col-md-7">
+        <h4>Conversations<span class="pull-right"><a href="#">+ New Conversation</a></span></h4>
+    </div>
+    <div class="col-md-3">
+        <h4>Files</h4>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-7">
+        <table class="table">
+            {% for conversation in group.conversations %}
+            <tr>
+                <td>
+                    <div class="row"><div class="col-md-12"><a href="{% url 'reader:conversation' conversation.id %}">{{ conversation.subject }}</a></div></div>
+                    <div class="row"><div class="col-md-1">&nbsp;</div><div class="col-md-11"><h6><a href="{% url 'reader:person' conversation.latest_message.sender.id %}">{{ conversation.latest_message.sender.name }}</a>: {{ conversation.latest_message.snippet }}</h6></div></div>
+                </td>
+                <td>{{ conversation.latest_message_date }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    <div class="col-md-3">
+        <table class="table">
+            {% for file in group.attachments %}
+            <tr>
+                <td><a href="/{{ file.stored_location }}">{{ file.filename }}</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td>&nbsp;</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
+
+{% endblock %}

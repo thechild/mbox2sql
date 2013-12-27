@@ -13,7 +13,7 @@
     <tbody>
         {% for person in people_list %}
         <tr>
-            <td><a href="{% url 'reader:person' person.id %}">{{ person.name }} __</a></td>
+            <td><a href="{% url 'reader:person' person.id %}">{{ person.name }}</a></td>
             <td><a href="mailto:{{ person.address }}">{{ person.address }}</a></td>
             <td>{{ person.conversations.count }}</td>
             <td>{% if person.newest_conversation %}{{ person.newest_conversation.latest_message_date }}{% else %}-{% endif %}</td>
