@@ -119,4 +119,3 @@ def view_group(request, group_id):
     group = group_from_conversation(Conversation.objects.get(id=group_id))
     context = get_context_with(request, {'group': group})
     return render_to_response('view_group.html', context)
-
