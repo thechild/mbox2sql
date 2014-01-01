@@ -58,7 +58,7 @@ class Conversation(models.Model):
             self.members.add(person)
 
     def trimmed_members(self):
-        return self.members.exclude(address='cchild@redpoint.com') ## again, huge hack
+        return self.members.exclude(get_current_user())
 
     def original_message(self):
         return self.sorted_messages()[0]

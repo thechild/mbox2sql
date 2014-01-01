@@ -1,9 +1,13 @@
 from django.shortcuts import render_to_response
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads, get_sorted_conversations
+from msgs.models import Message, Address, Attachment, Conversation, get_all_message_threads, get_sorted_conversations, get_current_user
 from msgs.groups import Group, group_from_url_representation, groups_including_person, group_from_conversation
 
 messages_per_page = 25
+
+########################
+### HELPER FUNCTIONS ###
+########################
 
 # helper function to get information needed by the base.html template
 def get_default_context(request):
@@ -17,6 +21,10 @@ def get_context_with(request, dict):
     context = get_default_context(request)
     context.update(dict)
     return context
+
+###########################
+### RAW MESSAGE THREADS ###
+###########################
 
 # returns a raw message (used for iframes) in either html or text
 def raw_message(request, message_id, text=False):
@@ -33,7 +41,7 @@ def raw_message_text(request, message_id):
     return raw_message(request, message_id, text=True)
 
 ##################
-### List Pages ###
+### LIST VIEWS ###
 ##################
 
 def conversation_list(request):
@@ -69,7 +77,7 @@ def message_list(request):
     return render_to_response('message_list.html', context)
 
 def people_list(request):
-    p_list = Address.objects.exclude(address='cchild@redpoint.com') # well that's a good hack
+    p_list = Address.objects.exclude(get_current_user())
 
     def latest_convo_date(address):
         d = address.newest_conversation()
@@ -84,13 +92,13 @@ def people_list(request):
     return render_to_response('people_list.html', context)
 
 def group_list(request):
-    person = Address.objects.get(address="cchild@redpoint.com") # how's that for a hard code
+    person = get_current_user()
     groups = groups_including_person(person)
     context = get_context_with(request, {'groups': groups })
     return render_to_response('group_list.html', context)
 
 ###############################
-### Individual Object Views ###
+### INDIVIDUAL OBJECT VIEWS ###
 ###############################
 
 def view_conversation(request, conversation_id, text=False):
