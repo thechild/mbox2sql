@@ -44,7 +44,7 @@ def raw_message_text(request, message_id):
 ### LIST VIEWS ###
 ##################
 
-def conversation_list(request):
+def conversation_list(request): #/mail/c
     message_list = get_sorted_conversations()
     paginator = Paginator(message_list, messages_per_page)
 
@@ -61,7 +61,7 @@ def conversation_list(request):
 
     return render_to_response('conversation_list.html', context)
 
-def message_list(request):
+def message_list(request): #/mail/
     message_list = get_all_message_threads()
     paginator = Paginator(message_list, messages_per_page)
 
@@ -76,8 +76,8 @@ def message_list(request):
     context = get_context_with(request, {'message_list': messages })
     return render_to_response('message_list.html', context)
 
-def people_list(request):
-    p_list = Address.objects.exclude(get_current_user())
+def people_list(request): #/mail/people
+    p_list = Address.objects.exclude(id=get_current_user().id) # this feels like it should be simpler
 
     def latest_convo_date(address):
         d = address.newest_conversation()
