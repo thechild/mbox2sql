@@ -27,6 +27,12 @@ class Address(models.Model):
         else:
             return None
 
+    def last_sent_message_snippet(self):
+        if len(self.sent_messages.all()) > 0:
+            return self.sent_messages.all().order_by('-sent_date')[0].snippet()
+        else:
+            return ''
+
     # returns sent messages and received messages, including ccs
     def all_messages(self): # can probably make the db do this...
         msgs = sorted(
