@@ -3,6 +3,7 @@ from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 from email.header import decode_header
 import models
+import uuid
 
 from threading import setup_threads
 
@@ -131,8 +132,8 @@ def get_charset(message, default='ascii'):
 def handle_attachment(message, content, related):
     print "saving attachment of type %s from message %d " % (content.get_content_type(), message.id)
     a = models.Attachment()
-    a.filename = content.get_filename()
-    a.content_type = content.get_content_type()
+    a.filename = content.get_filename() or str(uuid.uuid4())  ## some attachments appear to not have filenames (calendar invites?) so just make one up
+    a.content_type = content.get_content_type()ename? WTF do we do then?
     a.stored_location = os.path.join(files_dir, str(message.id), a.filename) # probably want to fix this too
     a.mime_related = related
     # load the file
