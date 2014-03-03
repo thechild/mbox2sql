@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Group List with Columns{% endblock %}
+
+{% block content %}
+<style>
+#groups {
+    float: left;
+    width: 25%;
+    height: 100%;
+    overflow: auto;
+}
+#conversations {
+    float: left;
+    width: 25%;
+    height: 100%;
+    overflow: auto;
+}
+#message {
+    float: left;
+    width: 50%;
+    height: 100%;
+    overflow: auto;
+}
+</style>
+
+{% if groups %}
+    <div id="content" class="row">
+        <div id="groups">
+            {% for group in groups %}
+                <p><a>{% for member in group.other_members %}{{ member.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</a> [{{ group.conversations.count }}]</p>
+            {% endfor %}
+        </div>
+        <div id="conversations">
+            {% for conversation in groups.0.conversations %}
+                <a>{{ conversation.subject }}</a>
+            {% endfor %}
+        </div>
+        <div id="message" >
+            {% with groups.0.conversations.0.latest_message as message %}
+                <pre>
+                    {{ message.body_text }}
+                </pre>
+            {% endwith %}
+        </div>
+    </div>
+{% else %}
+    <p>No messages available.</p>
+{% endif %}
+<ul class="pagination">
+    {% if message_list.has_previous %}<li><a href="?page={{ message_list.previous_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&laquo;</a></li>
+    {% for page in message_list.paginator.page_range %}
+    <li {% if page == message_list.number %}class="active"{% endif %}><a href="?page={{ page }}">{{ page }}</a></li>
+    {% endfor %}
+    {% if message_list.has_next %}<li><a href="?page={{ message_list.next_page_number }}">
+    {% else %}<li class="disabled"><a href="#">
+    {% endif %}&raquo;</a></li>
+</ul>
+
+{% endblock %}
