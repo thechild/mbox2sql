@@ -1,11 +1,10 @@
 import mailbox, os, hashlib
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
-from email.header import decode_header
+from model_helpers import parse_header, fill_in_headers, message_exists, get_charset, parse_address
 import models
-import uuid
 
-from threading import setup_threads
+from threading import setup_threads #should replace this with the cool map trick
 
 files_dir = 'files' # where to save attachments
 
@@ -74,24 +73,6 @@ def parse_message(message):
 
     return m
 
-# absurd that you have to do this...
-def parse_header(subject):
-    dh = decode_header(subject)
-    default_charset = 'ASCII'
-    return ''.join([ unicode(t[0], t[1] or default_charset) for t in dh ])
-
-def fill_in_headers(message, headers):
-    for field, text in headers:
-        nh = models.Header()
-        nh.field = field
-        nh.text = text
-        nh.message = message
-        nh.save()
-
-# tests if a message with message_id is already in the database
-def message_exists(message_id):
-    return len(models.Message.objects.filter(message_id=message_id)) > 0
-
 # given a Message object and some email content, parses the email by Content-Type and fills in the right fields in the Message object
 # doesn't handle multiple text or html parts well right now - just takes the first one - could just do an append?
 # if encounters multipart content, it recurses on all the parts
@@ -117,23 +98,12 @@ def fill_in_message_content(message, content, related=False):
         handle_attachment(message, content, related)
     return message
 
-
-def get_charset(message, default='ascii'):
-
-    if message.get_content_charset():
-        return message.get_content_charset()
-
-    if message.get_charset():
-        return message.get_charset()
-
-    return default
-
 # saves content as a file and creates an Attachment connected to message
 def handle_attachment(message, content, related):
     print "saving attachment of type %s from message %d " % (content.get_content_type(), message.id)
     a = models.Attachment()
-    a.filename = content.get_filename() or str(uuid.uuid4())  ## some attachments appear to not have filenames (calendar invites?) so just make one up
-    a.content_type = content.get_content_type()ename? WTF do we do then?
+    a.filename = content.get_filename()
+    a.content_type = content.get_content_type()
     a.stored_location = os.path.join(files_dir, str(message.id), a.filename) # probably want to fix this too
     a.mime_related = related
     # load the file
@@ -146,26 +116,3 @@ def handle_attachment(message, content, related):
         fp.write(file_content)
     a.message = message
     a.save()
-
-## takes an email address tuple ('name', 'address') and returns and Address object (either existing or newly created)
-def parse_address(raw_address):
-    print raw_address
-
-    text_name, text_address = raw_address
-
-    text_address = text_address.lower()
-
-    address = None
-    matches = models.Address.objects.filter(address=text_address)
-    if len(matches) == 0:
-        address = models.Address()
-        print 'creating new address: (%s %s)' % (text_name, text_address)
-        address.name = text_name
-        address.address = text_address
-        address.save()
-    else:
-        address = matches[0]
-        if text_name and not address.name: # if we didn't find a name before but have one now, update it
-            address.name = text_name
-            address.save()
-    return address
