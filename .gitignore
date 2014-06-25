@@ -5,3 +5,5 @@ msgs/mbox
 db.sqlite3.old
 files/
 msgs/mbox2
+pw
+gmail_test.py
