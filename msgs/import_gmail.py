@@ -8,6 +8,7 @@ from pprint import pprint
 files_dir = 'files'
 
 
+# log in to gmail using the given username and password, and return the gmail object
 def login(un=None, pw=None):
     if not un:
         with open('pw', 'r') as pwf:
@@ -22,6 +23,7 @@ def login(un=None, pw=None):
     return gm
 
 
+# get all messages since date if date is given.  Set inbox_only to False to get all_mail
 def import_messages_since(gmail, inbox_only=True, date=None):
     mailbox = gmail.all_mail()
 
@@ -54,6 +56,24 @@ def import_messages_since(gmail, inbox_only=True, date=None):
     return new_messages
 
 
+def parse_conversation(message):
+    # want to do a lot of this with the oldest message in thread, so need to find that
+    conversations = models.Conversation.objects.filter(thread_id=message.thread_index)
+    if len(conversations) == 0:
+        conversation = models.Conversation()
+        print 'creating new conversation: (%s)' % (message.subject)
+        conversation.creator = message.sender
+        conversation.subject = message.subject
+        conversation.message_id = message.message_id
+        conversation.thread_id = message.thread_index
+        conversation.save()
+    else:
+        conversation = conversations[0]
+    
+    conversation.add_message(message)
+    conversation.save()
+    # could optimize this by taking in the thread here too
+
 def parse_message(message):
     m = models.Message()
     if message_exists(message.uid):
@@ -81,6 +101,8 @@ def parse_message(message):
         m.cc_recipients.add(parse_address(c))
 
     m.save()
+    parse_conversation(m)
+
     return m
 
 

@@ -53,15 +53,17 @@ class Conversation(models.Model):
     members = models.ManyToManyField(Address, related_name='conversations')
     subject = models.TextField()
     message_id = models.CharField(max_length=200)
+    thread_id = models.CharField(max_length=200, unique=True, null=True)
     latest_message_date = models.DateTimeField(default=datetime(1980, 1, 1))
 
     def add_message(self, message):
-        self.messages.add(message)
-        if message.sent_date > self.latest_message_date:
-            self.latest_message_date = message.sent_date
-            self.save()
-        for person in message.all_related_people():
-            self.members.add(person)
+        if message not in self.messages.all():
+            self.messages.add(message)
+            if message.sent_date > self.latest_message_date:
+                self.latest_message_date = message.sent_date
+                self.save()
+            for person in message.all_related_people():
+                self.members.add(person)
 
     def trimmed_members(self):
         return self.members.exclude(get_current_user())
