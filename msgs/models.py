@@ -53,7 +53,7 @@ class Conversation(models.Model):
     members = models.ManyToManyField(Address, related_name='conversations')
     subject = models.TextField()
     message_id = models.CharField(max_length=200)
-    latest_message_date = models.DateTimeField(default = datetime(1980, 1, 1))
+    latest_message_date = models.DateTimeField(default=datetime(1980, 1, 1))
 
     def add_message(self, message):
         self.messages.add(message)
@@ -78,11 +78,15 @@ class Conversation(models.Model):
     def attachments_count(self):
         return self.attachments().count()
 
-    def attachments(self): # currently orders by oldest first
-        return Attachment.objects.filter(message__conversation = self).exclude(mime_related=True).order_by('message__sent_date')
+    def attachments(self):  # currently orders by oldest first
+        a = Attachment.objects.filter(message__conversation=self)
+        a = a.exclude(mime_related=True)
+        a = a.order_by('message__sent_date')
+        return a
 
     def __unicode__(self):
         return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
+
 
 class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
@@ -155,7 +159,8 @@ class Attachment(models.Model):
 
 def get_current_user():
     # obviously a hack
-    return Address.objects.get(address='cchild@redpoint.com')
+    # return Address.objects.get(address='cchild@redpoint.com')
+    return Address.objects.get(address='thechild@gmail.com')
 
 def get_sorted_conversations():
     conversations = Conversation.objects.filter(members=get_current_user()).order_by('-latest_message_date')
