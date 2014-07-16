@@ -36,10 +36,10 @@ class Address(models.Model):
     # returns sent messages and received messages, including ccs
     def all_messages(self): # can probably make the db do this...
         msgs = sorted(
-            chain(self.sent_messages.all(),
-                self.received_messages.all(),
-                self.cc_messages.all()),
-            key=attrgetter('sent_date'))
+                      chain(self.sent_messages.all(),
+                            self.received_messages.all(),
+                            self.cc_messages.all()),
+                      key=attrgetter('sent_date'))
         return msgs
 
     def sent_attachments(self):
@@ -138,6 +138,7 @@ class Message(models.Model):
     def __unicode__(self):
         return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
 
+
 class Header(models.Model):
     message = models.ForeignKey(Message, related_name="headers")
     field = models.CharField(max_length=200)
@@ -145,6 +146,7 @@ class Header(models.Model):
 
     def __unicode__(self):
         return "%s: %s" % (self.field, self.text)
+
 
 class Attachment(models.Model):
     filename = models.CharField(max_length=200)
@@ -159,14 +161,17 @@ class Attachment(models.Model):
 
     # should probably override delete and actually delete the file too
 
+
 def get_current_user():
     # obviously a hack
     # return Address.objects.get(address='cchild@redpoint.com')
     return Address.objects.get(address='thechild@gmail.com')
 
+
 def get_sorted_conversations():
     conversations = Conversation.objects.filter(members=get_current_user()).order_by('-latest_message_date')
     return conversations
+
 
 def get_all_message_threads():
     messages = Message.objects.filter(recipients=get_current_user()).filter(parent__isnull=True).order_by('-sent_date')

@@ -4,7 +4,7 @@ from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 from model_helpers import parse_header, fill_in_headers, message_exists, get_charset, parse_address
 import models
 
-from threading import setup_threads #should replace this with the cool map trick
+from threading import setup_threads  #should replace this with the cool map trick
 
 files_dir = 'files' # where to save attachments
 
@@ -51,7 +51,7 @@ def parse_message(message):
     if message['Thread-Index']:
         m.thread_index = message['Thread-Index']
     else:
-        m.thread_index = m.message_id # TODO: this should be smarter, doesn't really work right now
+        m.thread_index = m.message_id  # TODO: this should be smarter, doesn't really work right now
 
     m.save()
 
