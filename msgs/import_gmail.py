@@ -24,11 +24,11 @@ def login(un=None, pw=None):
 
 
 # get all messages since date if date is given.  Set inbox_only to False to get all_mail
-def import_messages_since(gmail, inbox_only=True, date=None):
-    mailbox = gmail.all_mail()
+def import_messages_since(gm, inbox_only=True, date=None):
+    mailbox = gm.all_mail()
 
     if inbox_only:
-        mailbox = gmail.inbox()
+        mailbox = gm.inbox()
 
     print "fetching messages in folder %s" % mailbox.name
 
@@ -73,6 +73,7 @@ def parse_conversation(message):
     conversation.add_message(message)
     conversation.save()
     # could optimize this by taking in the thread here too
+
 
 def parse_message(message):
     m = models.Message()

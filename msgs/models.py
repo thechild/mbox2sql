@@ -33,6 +33,7 @@ class Address(models.Model):
         else:
             return ''
 
+
     # returns sent messages and received messages, including ccs
     def all_messages(self): # can probably make the db do this...
         msgs = sorted(
