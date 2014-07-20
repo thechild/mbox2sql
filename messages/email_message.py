@@ -11,9 +11,12 @@ class EmailMessage():
 
     def __init__(self, msg):
         self._email_message = msg
-        self.parse_content()
+        self.parse_content(self._email_message)
 
-    def parse_content(self, content=self._email_message, related=False):
+    def __repr(self):
+        return 'EmailMessage(subject="%s", sender="%s")' % (self.subject, self.sender)
+
+    def parse_content(self, content, related=False):
         ct = content.get_content_type()
         if content.is_multipart():
             r = '/related' in ct
@@ -64,7 +67,7 @@ class EmailMessage():
 def parse_header(subject):
     dh = decode_header(subject)
     default_charset = 'ASCII'
-    return ''.join([ unicode(t[0], t[1] or default_charset) for t in dh])
+    return ''.join([unicode(t[0], t[1] or default_charset) for t in dh])
 
 
 def get_charset(message, default='ascii'):
