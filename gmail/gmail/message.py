@@ -218,7 +218,7 @@ class Message():
 
         # should this first line use the all_mail mailbox, or self.mailbox?  Also, if we use all mail do we need sent mail?
         received_messages = fetch_and_cache_messages(self.gmail, self.gmail.mailboxes['[Gmail]/All Mail'], self.thread_id)
-        print "got %s received messages from %s" % (len(received_messages), self.gmail.current_mailbox)
+        # print "got %s received messages from %s" % (len(received_messages), self.gmail.current_mailbox)
         #sent_messages = fetch_and_cache_messages(self.gmail, self.gmail.mailboxes['[Gmail]/Sent Mail'], self.thread_id)
         #print "and %s sent messages from %s" % (len(sent_messages), self.gmail.current_mailbox)
         #if set(received_messages).issuperset(sent_messages):

@@ -1,6 +1,7 @@
 from datetime import datetime
 from email.utils import parsedate_tz, mktime_tz, parseaddr, getaddresses
 from email.header import decode_header
+import re
 
 
 class EmailMessage():
@@ -11,7 +12,11 @@ class EmailMessage():
 
     def __init__(self, msg):
         self._email_message = msg
+        self.raw_headers = {}
+        self.thread_id = None
+        self.message_id = None
         self.parse_content(self._email_message)
+        self.parse_headers()
 
     def __repr(self):
         return 'EmailMessage(subject="%s", sender="%s")' % (self.subject, self.sender)
@@ -35,10 +40,21 @@ class EmailMessage():
             else:
                 self.attachments.append(content)
 
+    def parse_headers(self):
+
+        for hdr in self._email_message.keys():
+            self.raw_headers[hdr] = self._email_message[hdr]
+        raw_headers = self._email_message.raw_headers
+        if re.search(r'X-GM-THRID (\d+)', raw_headers):
+            self.thread_id = re.search(r'X-GM-THRID (\d+)', raw_headers).groups(1)[0]
+        if re.search(r'X-GM-MSGID (\d+)', raw_headers):
+            self.message_id = re.search(r'X-GM-MSGID (\d+)', raw_headers).groups(1)[0]
+
+
     @property
     def sender(self):
         from_text = parseaddr(parse_header(self._email_message['from']))
-        return getaddresses(from_text)
+        return from_text
 
     @property
     def tos(self):
