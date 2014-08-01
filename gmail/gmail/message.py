@@ -274,6 +274,7 @@ class Attachment:
         self.name = attachment.get_filename()
         # Raw file data
         self.payload = attachment.get_payload(decode=True)
+        self.content_type = attachment.get_content_type()
         # Filesize in kilobytes
         self.size = int(round(len(self.payload)/1000.0))
 
