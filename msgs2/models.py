@@ -1,10 +1,10 @@
 from django.db import models
 import os
 import hashlib
+import uuid
+import datetime
 
 files_dir = 'files'
-
-# Create your models here.
 
 
 class Person(models.Model):
@@ -20,6 +20,9 @@ class Address(models.Model):
     label = models.CharField(max_length=50)
     person = models.ForeignKey(Person, related_name='addresses')
 
+    def __unicode__(self):
+        return "{}".format(self.email)
+
 
 class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
@@ -29,6 +32,11 @@ class Message(models.Model):
     sent_date = models.DateTimeField()
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
+    in_inbox = models.BooleanField(default=False)
+    unread = models.BooleanField(default=True)
+
+    def __unicode__(self):
+        return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
 
 
 class Header(models.Model):
@@ -53,6 +61,29 @@ class Attachment(models.Model):
 
     def __unicode__(self):
         return self.filename
+
+
+class ToDo(models.Model):
+    date_created = models.DateField(default=datetime.date.today())
+    date_due = models.DateField(default=datetime.date.today() + datetime.timedelta(days=1))
+    subject = models.CharField(max_length=200)
+    message = models.ForeignKey(Message, blank=True, null=True, related_name='todos')
+    note_text = models.TextField(default='')
+
+    def __unicode__(self):
+        return "ToDo: {}".format(self.subject)
+
+
+def add_todo_from_message(message):
+    if len(message.todos) > 0:  # a todo already exists for this message, so surface it
+        return message.todos[0]
+
+    todo = ToDo()
+    todo.subject = message.subject
+    todo.save()
+    todo.message = message
+    todo.save()
+    return todo
 
 
 def get_or_create_person(address_tuple):
@@ -81,6 +112,7 @@ def create_message(email_message):
         message.sent_date = email_message.sent_date
         message.message_id = email_message.message_id
         message.thread_id = email_message.thread_id  # where should this logic live?
+
 
 
 def import_message(gmail_message):
@@ -118,23 +150,28 @@ def import_message(gmail_message):
         body_html.save()
 
     # need to handle attachments
-    for att in gmail_message.attachments:
-        handle_attachment(new_message, att, False) # need to figure out how to get related from the gmail class
+    for att, related in gmail_message.attachments:
+        handle_attachment(new_message, att, related)
 
     return new_message
 
 
 # saves content as a file and creates an Attachment connected to message
 def handle_attachment(message, content, related=False):
-    print "saving attachment %s of type %s from message %d " % (content.name, content.content_type, message.id)
+    r = ''
+    if related:
+        r = '(r)'
+    print "saving attachment [%s] of type %s from message %d %s" % (content.get_filename(), content.get_content_type(), message.id, r)
     a = Attachment()
-    a.filename = content.name
-    a.content_type = content.content_type
-    a.stored_location = os.path.join(files_dir, str(message.id), a.filename) # probably want to fix this too
+    a.filename = content.get_filename()
+    if not a.filename:
+        a.filename = str(uuid.uuid4())
+    a.content_type = content.get_content_type()
+    a.stored_location = os.path.join(files_dir, str(message.id), a.filename)  # probably want to fix this too
     a.mime_related = related
     # load the file
-    file_content = content.payload
-    a.file_md5 = hashlib.md5(file_content).hexdigest() # again, probably a better way to do this than all in memory
+    file_content = content.get_payload(decode=1)
+    a.file_md5 = hashlib.md5(file_content).hexdigest()  # again, probably a better way to do this than all in memory
     # actually write it do disk - should wrap this in a try except too
     if not os.path.exists(os.path.join(files_dir, str(message.id))):
         os.makedirs(os.path.join(files_dir, str(message.id)))
