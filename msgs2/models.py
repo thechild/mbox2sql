@@ -32,17 +32,54 @@ class Message(models.Model):
     sent_date = models.DateTimeField()
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
-    in_inbox = models.BooleanField(default=False)
-    unread = models.BooleanField(default=True)
+
+    @property
+    def is_unread(self):
+        return self.flags.exists(flag=MessageFlag.UNREAD_FLAG)
+
+    @property
+    def is_in_inbox(self):
+        return self.flags.exists(flag=MessageFlag.INBOX_FLAG)
+
+    @property
+    def is_starred(self):
+        return self.flags.exists(flag=MessageFlag.STARRED_FLAG)
+
+    def archive(self):
+        self.flags.filter(flag=MessageFlag.INBOX_FLAG).delete()
+        # TODO somehow store this for the server...
+
+    def mark_read(self):
+        self.flags.filter(flag=MessageFlag.UNREAD_FLAG).delete()
+        # TODO somehow store this for the server
 
     def __unicode__(self):
         return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
 
 
+class MessageFlag(models.Model):
+    UNREAD_FLAG = 'U'
+    INBOX_FLAG = 'I'
+    STARRED_FLAG = 'S'
+    IMPORTANT_FLAG = 'M'
+
+    FLAGS = (
+        (UNREAD_FLAG, 'Unread'),
+        (INBOX_FLAG, 'Inbox'),
+        (STARRED_FLAG, 'Starred'),
+        (IMPORTANT_FLAG, 'Important'),
+    )
+    message = models.ForeignKey(Message, related_name='flags')
+    flag = models.CharField(max_length=1, choices=FLAGS)
+
+    def __unicode_(self):
+        return [y[0] for y in MessageFlag.FLAGS if y[0] == self.flag][0]
+
+
 class Header(models.Model):
     key = models.CharField(max_length=200)
     value = models.TextField()
-    message = models.ForeignKey(Message)
+    message = models.ForeignKey(Message, related_name='headers')
 
 
 class MessageBody(models.Model):
@@ -114,12 +151,12 @@ def create_message(email_message):
         message.thread_id = email_message.thread_id  # where should this logic live?
 
 
-
 def import_message(gmail_message):
     # see if the message is already in the db
     if len(Message.objects.filter(message_id=gmail_message.message_id)) > 0:
         # already exists, skip
         print "Message Id %s already in database, skipping (Subject: %s)" % (gmail_message.message_id, gmail_message.subject)
+        # maybe update read status, or inbox status if I can figure out how to do that?
         return None
 
     new_message = Message(subject=gmail_message.subject,
@@ -149,11 +186,22 @@ def import_message(gmail_message):
                                 content=gmail_message.html)
         body_html.save()
 
+    if not gmail_message.is_read():
+        new_message.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
+
+    # add the headers
+    for k, v in gmail_message.headers.iteritems():
+        new_message.headers.add(Header(key=k, value=v))
+
     # need to handle attachments
     for att, related in gmail_message.attachments:
         handle_attachment(new_message, att, related)
 
     return new_message
+
+# return all messages in the inbox
+def get_inbox():
+    return Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
 
 
 # saves content as a file and creates an Attachment connected to message
