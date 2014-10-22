@@ -7,6 +7,7 @@ from email.header import decode_header, make_header
 from email.utils import getaddresses
 from imaplib import ParseFlags
 
+
 class Message():
 
     def __repr__(self):
@@ -39,9 +40,7 @@ class Message():
         self.thread = []
         self.message_id = None
 
-        self.attachments = None
-
-
+        self.attachments = []
 
     def is_read(self):
         return ('\\Seen' in self.flags)
@@ -110,8 +109,6 @@ class Message():
         if name not in ['[Gmail]/Bin', '[Gmail]/Trash']:
             self.delete()
 
-
-
     def archive(self):
         self.move_to('[Gmail]/All Mail')
 
@@ -158,14 +155,16 @@ class Message():
 
         self.subject = self.parse_encoded(self.message['subject'])
 
-        if self.message.get_content_maintype() == "multipart":
-            for content in self.message.walk():
-                if content.get_content_type() == "text/plain":
-                    self.body = content.get_payload(decode=True)
-                elif content.get_content_type() == "text/html":
-                    self.html = content.get_payload(decode=True)
-        elif self.message.get_content_maintype() == "text":
-            self.body = self.message.get_payload()
+        #if self.message.get_content_maintype() == "multipart":
+        #    for content in self.message.walk():
+        #        if content.get_content_type() == "text/plain":
+        #            self.body = content.get_payload(decode=True)
+        #        elif content.get_content_type() == "text/html":
+        #            self.html = content.get_payload(decode=True)
+        #elif self.message.get_content_maintype() == "text":
+        #    self.body = self.message.get_payload()
+
+        self.cc_message_parse(self.message)
 
         self.sent_at = datetime.datetime.fromtimestamp(time.mktime(email.utils.parsedate_tz(self.message['date'])[:9]))
 
@@ -178,13 +177,29 @@ class Message():
         if re.search(r'X-GM-MSGID (\d+)', raw_headers):
             self.message_id = re.search(r'X-GM-MSGID (\d+)', raw_headers).groups(1)[0]
 
-
         # Parse attachments into attachment objects array for this message
-        self.attachments = [
-            Attachment(attachment) for attachment in self.message._payload
-                if not isinstance(attachment, basestring) and attachment.get('Content-Disposition') is not None
-        ]
+        #self.attachments = [
+        #    Attachment(attachment) for attachment in self.message._payload
+        #        if not isinstance(attachment, basestring) and attachment.get('Content-Disposition') is not None
+        #]
 
+    def cc_message_parse(self, content, related=False):
+        if content.get_content_type() == 'multipart/related':
+            for part in content.get_payload():
+                self.cc_message_parse(part, related=True)
+        elif content.get_content_type() in ('multipart/alternative', 'multipart/mixed'):
+            for part in content.get_payload():
+                self.cc_message_parse(part)
+        elif content.get_content_type() == 'text/plain':
+            self.body = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+        elif content.get_content_type() == 'text/html':
+            self.html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+        elif content.get_content_type() == 'text/enriched':
+            pass  # ignore rich text for now...
+        elif 'message/' in content.get_content_type():
+            pass  # ignore this for now, but should probably save as an .eml or something?
+        else:
+            self.attachments.append((content, related))
 
     def fetch(self):
         if not self.message:
@@ -288,3 +303,15 @@ class Attachment:
 
         with open(path, 'wb') as f:
             f.write(self.payload)
+
+
+def get_charset(message, default='ascii'):
+
+        if message.get_content_charset():
+            default = message.get_content_charset()
+
+        if message.get_charset():
+            default = message.get_charset()
+
+        print "charset: %s" % default
+        return default
