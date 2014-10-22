@@ -44,7 +44,13 @@ class EmailMessage():
 
         for hdr in self._email_message.keys():
             self.raw_headers[hdr] = self._email_message[hdr]
+
+
+
+
         raw_headers = self._email_message.raw_headers
+
+
         if re.search(r'X-GM-THRID (\d+)', raw_headers):
             self.thread_id = re.search(r'X-GM-THRID (\d+)', raw_headers).groups(1)[0]
         if re.search(r'X-GM-MSGID (\d+)', raw_headers):
