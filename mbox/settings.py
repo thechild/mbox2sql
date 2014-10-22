@@ -37,7 +37,7 @@ INSTALLED_APPS = (
 #    'django.contrib.messages',
     'django.contrib.staticfiles',
     'msgs2',
-    'reader',
+    'reader2',
     'django_extensions',
     'south',
 )
