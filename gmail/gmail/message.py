@@ -183,6 +183,25 @@ class Message():
         #        if not isinstance(attachment, basestring) and attachment.get('Content-Disposition') is not None
         #]
 
+    @staticmethod
+    def get_decoded_payload(content):
+
+        if content.get_content_charset():
+            encoding = content.get_content_charset()
+        elif content.get_charset():
+            encoding = content.get_content_charset()
+        else:
+            encoding = 'ascii'
+
+        payload = content.get_payload()
+
+        try:
+            decoded = payload.decode(encoding)
+        except UnicodeDecodeError:
+            decoded = payload.decode('utf8', errors='replace')
+
+        return decoded
+
     def cc_message_parse(self, content, related=False):
         if content.get_content_type() == 'multipart/related':
             for part in content.get_payload():
@@ -191,9 +210,9 @@ class Message():
             for part in content.get_payload():
                 self.cc_message_parse(part)
         elif content.get_content_type() == 'text/plain':
-            self.body = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+            self.body = self.get_decoded_payload(content)
         elif content.get_content_type() == 'text/html':
-            self.html = unicode(content.get_payload(decode=True), encoding=get_charset(content))
+            self.html = self.get_decoded_payload(content)
         elif content.get_content_type() == 'text/enriched':
             pass  # ignore rich text for now...
         elif 'message/' in content.get_content_type():
@@ -246,6 +265,8 @@ class Message():
 
         self.thread = sorted(dict(received_messages.items() + sent_messages.items()).values(),
             key=lambda m: m.sent_at)
+
+        print "fetched {} messages".format(len(received_messages))
         return self.thread
 
 
@@ -305,7 +326,7 @@ class Attachment:
             f.write(self.payload)
 
 
-def get_charset(message, default='ascii'):
+def get_charset(message, default='utf8'):
 
         if message.get_content_charset():
             default = message.get_content_charset()
