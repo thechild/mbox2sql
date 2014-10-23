@@ -177,6 +177,12 @@ class Message():
         if re.search(r'X-GM-MSGID (\d+)', raw_headers):
             self.message_id = re.search(r'X-GM-MSGID (\d+)', raw_headers).groups(1)[0]
 
+        if self.message['date']:
+            self.sent_at = datetime.datetime.fromtimestamp(time.mktime(email.utils.parsedate_tz(self.message['date'])[:9]))
+        else:
+            self.sent_at = datetime.datetime(year=1980, month=1, day=1)
+            print "Message {} <{}> didn't have a sent date, setting to 1/1/1980".format(self.message_id, self.subject)
+
         # Parse attachments into attachment objects array for this message
         #self.attachments = [
         #    Attachment(attachment) for attachment in self.message._payload
