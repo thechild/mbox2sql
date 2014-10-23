@@ -51,7 +51,7 @@ class Message(models.Model):
 
     def mark_read(self):
         self.flags.filter(flag=MessageFlag.UNREAD_FLAG).delete()
-        # TODO somehow store this for the server
+        # TODO somehow store this for the server...
 
     def __unicode__(self):
         return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
@@ -206,9 +206,25 @@ def import_message(gmail_message, save_attachments=True):
 
     return new_message
 
+
 # return all messages in the inbox
 def get_inbox():
     return Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
+
+
+def is_sender_legit(email):
+    return Message.objects.filter(sender__email='thechild@gmail.com', members__addresses__email=email).exists()
+
+
+# get all messages from senders that I've replied to before
+def get_incoming_inbox():
+    inbox = get_inbox()
+    return [m for m in inbox if is_sender_legit(m.sender.email)]
+
+
+def get_other_inbox():
+    inbox = get_inbox()
+    return [m for m in inbox if not is_sender_legit(m.sender.email)]
 
 
 # saves content as a file and creates an Attachment connected to message
@@ -218,7 +234,6 @@ def handle_attachment(message, content, related=False):
         r = '(r)'
     print "saving attachment [%s] of type %s from message %d %s" % (content.get_filename(), content.get_content_type(), message.id, r)
     a = Attachment()
-    a.filename = content.get_filename()
     a.filename = content.get_filename()  # TODO need to parse weird strings from this
     if not a.filename:
         a.filename = str(uuid.uuid4())
