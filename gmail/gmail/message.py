@@ -153,7 +153,7 @@ class Message():
 
         self.parse_recipients()
 
-        self.subject = self.parse_encoded(self.message['subject'])
+        self.subject = unicode(self.message['subject'].decode('utf-8', errors='ignore')) # TODO fix this
 
         #if self.message.get_content_maintype() == "multipart":
         #    for content in self.message.walk():
@@ -165,8 +165,6 @@ class Message():
         #    self.body = self.message.get_payload()
 
         self.cc_message_parse(self.message)
-
-        self.sent_at = datetime.datetime.fromtimestamp(time.mktime(email.utils.parsedate_tz(self.message['date'])[:9]))
 
         self.flags = self.parse_flags(raw_headers)
 
@@ -204,6 +202,8 @@ class Message():
         try:
             decoded = payload.decode(encoding)
         except UnicodeDecodeError:
+            decoded = payload.decode('utf8', errors='replace')
+        except LookupError:
             decoded = payload.decode('utf8', errors='replace')
 
         return decoded
