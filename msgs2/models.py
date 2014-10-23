@@ -81,11 +81,17 @@ class Header(models.Model):
     value = models.TextField()
     message = models.ForeignKey(Message, related_name='headers')
 
+    def __unicode__(self):
+        return "{}: {}".format(self.key, self.value)
+
 
 class MessageBody(models.Model):
     message = models.ForeignKey(Message, related_name='body')
     type = models.CharField(max_length=10)
     content = models.TextField()
+
+    def __unicode__(self):
+        return "[{}]: {}".format(self.type, self.content[:100])
 
 
 class Attachment(models.Model):
