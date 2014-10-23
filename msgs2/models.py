@@ -151,7 +151,7 @@ def create_message(email_message):
         message.thread_id = email_message.thread_id  # where should this logic live?
 
 
-def import_message(gmail_message):
+def import_message(gmail_message, save_attachments=True):
     # see if the message is already in the db
     if len(Message.objects.filter(message_id=gmail_message.message_id)) > 0:
         # already exists, skip
@@ -194,8 +194,9 @@ def import_message(gmail_message):
         new_message.headers.add(Header(key=k, value=v))
 
     # need to handle attachments
-    for att, related in gmail_message.attachments:
-        handle_attachment(new_message, att, related)
+    if save_attachments:
+        for att, related in gmail_message.attachments:
+            handle_attachment(new_message, att, related)
 
     return new_message
 
