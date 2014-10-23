@@ -219,6 +219,7 @@ def handle_attachment(message, content, related=False):
     print "saving attachment [%s] of type %s from message %d %s" % (content.get_filename(), content.get_content_type(), message.id, r)
     a = Attachment()
     a.filename = content.get_filename()
+    a.filename = content.get_filename()  # TODO need to parse weird strings from this
     if not a.filename:
         a.filename = str(uuid.uuid4())
     a.content_type = content.get_content_type()
