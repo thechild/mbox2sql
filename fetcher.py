@@ -1,5 +1,6 @@
 import gmail.gmail as gmail
 import datetime
+import time
 from msgs2.models import import_message, Message, MessageFlag, Address, Attachment, Person
 
 class Fetcher():
@@ -48,17 +49,18 @@ class Fetcher():
         return nm
 
     # loads new messages into the db - run as a batch job
-    def load_new_messages(self, newest_time=datetime.datetime.today() - datetime.timedelta(days=30)):  # should replace with full sync...
+    def load_new_messages(self, newest_time=datetime.datetime.today() - datetime.timedelta(days=30), full_pull=False,
+                          prefetch=True):
         gm = self.gm()
         # find the newest message in the database
 
-        if Message.objects.exists():
+        if (not full_pull) and Message.objects.exists():
             newest_time = max(newest_time, Message.objects.latest(field_name='sent_date').sent_date)
             # TODO note, will not pull messages older than newest_time, no matter what
 
         print "Fetching all messages since {}".format(newest_time)
 
-        messages = gm.all_mail().mail(after=newest_time, prefetch=True)  # TODO this is probably buggy
+        messages = gm.all_mail().mail(after=newest_time, prefetch=prefetch)  # TODO this is probably buggy
 
         for (index, m) in enumerate(messages):
             print "Fetching message ({}/{})".format(index+1, len(messages))
@@ -66,6 +68,43 @@ class Fetcher():
             new_messages = [import_message(m) for m in m.thread]
 
         return new_messages
+
+    def load_all_messages(self, step=100, since_date=None):
+        gm = self.gm()
+
+        load_start = time.time()
+
+        print "Loading all messages since {} in steps of {}...".format(since_date, step)
+        # this should be called very infrequently.
+        # loads all messages since since_date (or forever if it is None)
+        # in blocks of step (default 10)
+
+        # first, get all messages
+        if since_date:
+            all_messages = gm.all_mail().mail(after=since_date)
+        else:
+            all_messages = gm.all_mail().mail()
+        print "Found a total of {} messages, starting the process...".format(len(all_messages))
+
+        # helper to actually process a set of messages:
+        def load_messages(messages):
+            message_dict = {m.uid: m for m in messages}
+            print "Fetching {} messages...".format(len(messages))
+            start_time = time.time()
+            fetched_messages = gm.fetch_multiple_messages(message_dict)
+            end_time = time.time()
+            print "Fetched them in {} seconds. Starting import process...".format(end_time - start_time)
+            for message in fetched_messages.values():
+                import_message(message)
+            print "Imported."
+
+        for message_chunk in [all_messages[i:i + step] for i in range(0, len(all_messages), step)]:
+            load_messages(message_chunk)
+
+        load_end = time.time()
+
+        print "***Fetched a total of {} messages in {} seconds.".format(len(all_messages), load_end - load_start)
+
 
     # moves all messages in db out of the inbox, then moves those in the inbox (on gmail) into the db's inbox, adding
     # them if necessary, and setting the correct read/unread state
