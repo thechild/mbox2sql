@@ -3,6 +3,7 @@ import datetime
 import time
 from msgs2.models import import_message, Message, MessageFlag, Address, Attachment, Person
 
+
 class Fetcher():
     _gmail = None
 
@@ -69,7 +70,17 @@ class Fetcher():
 
         return new_messages
 
+    def fetch_multiple_messages(self, messages):
+        message_dict = {m.uid: m for m in messages}
+        print "Fetching {} messages...".format(len(messages))
+        start_time = time.time()
+        fetched_messages = self.gm().fetch_multiple_messages(message_dict)
+        end_time = time.time()
+        print "Fetched them in {} seconds. Starting import process...".format(end_time - start_time)
+        return fetched_messages
+
     def load_all_messages(self, step=100, since_date=None):
+        # TODO we need a way to have this fail and restart...
         gm = self.gm()
 
         load_start = time.time()
@@ -86,25 +97,31 @@ class Fetcher():
             all_messages = gm.all_mail().mail()
         print "Found a total of {} messages, starting the process...".format(len(all_messages))
 
-        # helper to actually process a set of messages:
-        def load_messages(messages):
-            message_dict = {m.uid: m for m in messages}
-            print "Fetching {} messages...".format(len(messages))
-            start_time = time.time()
-            fetched_messages = gm.fetch_multiple_messages(message_dict)
-            end_time = time.time()
-            print "Fetched them in {} seconds. Starting import process...".format(end_time - start_time)
-            for message in fetched_messages.values():
-                import_message(message)
-            print "Imported."
+        num_added = 0
+        steps = 0
 
         for message_chunk in [all_messages[i:i + step] for i in range(0, len(all_messages), step)]:
-            load_messages(message_chunk)
+            steps = steps + 1
+            print "Fetching group {} of {}...".format(steps, (len(all_messages) - 1) / step + 1)
+            # TODO don't fetch messages where the uid is already in the db (only works when we only pull from all_mail)
+            fetched_messages = self.fetch_multiple_messages(message_chunk)
+            for message in fetched_messages.values():
+                try:
+                    m = import_message(message)
+                except (KeyboardInterrupt, SystemExit):
+                    raise
+                except Exception as e:
+                    print "EEEE: Exception parsing message with uid {} and messageid {}".format(
+                        message.uid, message.message_id)
+                    print e
+
+                if m:
+                    num_added += 1
 
         load_end = time.time()
 
-        print "***Fetched a total of {} messages in {} seconds.".format(len(all_messages), load_end - load_start)
-
+        print "***Fetched a total of {} messages in {} seconds, and added {} ({}%) to the db.".format(
+            len(all_messages), load_end - load_start, num_added, num_added / len(all_messages))
 
     # moves all messages in db out of the inbox, then moves those in the inbox (on gmail) into the db's inbox, adding
     # them if necessary, and setting the correct read/unread state
