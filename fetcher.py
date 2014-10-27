@@ -1,7 +1,8 @@
 import gmail.gmail as gmail
 import datetime
 import time
-from msgs2.models import import_message, Message, MessageFlag, Address, Attachment, Person
+from msgs2.models import Message, MessageFlag
+from msgs2.importing import import_message
 
 
 class Fetcher():
