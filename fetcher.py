@@ -4,6 +4,15 @@ import time
 from msgs2.models import Message, MessageFlag
 from msgs2.importing import import_message
 
+### Usage:
+### For a new account, call load_all_messages to get the full history (at least since since_date) into the db
+### This will take a long time, depending on number of messages (~2-3 minutes per 2000 messages)
+###
+### For accounts that have already been loaded, call load_new_messages to bring them up to date with server
+###
+### For all accounts, call sync_inbox to correctly set the inbox flags.  Note this is currently just one-way
+### Sync - inbox flags propagage from server to db, but not the other way around.
+
 
 class Fetcher():
     _gmail = None
@@ -50,15 +59,22 @@ class Fetcher():
             new_messages.append(nm)
         return nm
 
-    # loads new messages into the db - run as a batch job
     def load_new_messages(self, newest_time=datetime.datetime.today() - datetime.timedelta(days=30), full_pull=False,
-                          prefetch=True):
+                          prefetch=True, pull_threads=False):
+        """Loads new messages into the database, to be run as a batch job
+
+        :param newest_time: optional datetime setting the furthest back the method will pull.  defaults to 30 days
+        :param full_pull: optional boolean indicating that all messages since newest_time should be pullled.  Default is
+        to only pull since the newest message in the database
+        :param prefetch: optional boolean indicating whether messages should be prefetched or individually fetched (false)
+        :param pull_threads: optional boolean enabling pulling of threads instead of individual messages.  Slows things down.
+        :returns list of messages pulled
+        """
         gm = self.gm()
         # find the newest message in the database
 
         if (not full_pull) and Message.objects.exists():
             newest_time = max(newest_time, Message.objects.latest(field_name='sent_date').sent_date)
-            # TODO note, will not pull messages older than newest_time, no matter what
 
         print "Fetching all messages since {}".format(newest_time)
 
@@ -66,8 +82,12 @@ class Fetcher():
 
         for (index, m) in enumerate(messages):
             print "Fetching message ({}/{})".format(index+1, len(messages))
-            m.fetch_thread()
-            new_messages = [import_message(m) for m in m.thread]
+            if pull_threads:
+                m.fetch_thread()
+                new_messages = [import_message(m) for m in m.thread]
+            else:
+                m.fetch()
+                new_messages = import_message(m)
 
         return new_messages
 
@@ -80,6 +100,8 @@ class Fetcher():
         print "Fetched them in {} seconds. Starting import process...".format(end_time - start_time)
         return fetched_messages
 
+    # Loads all messages received since since_date in steps of step (I've been using 2000)
+    # Used for loading large volumes of messages from gmail
     def load_all_messages(self, step=100, since_date=None):
         gm = self.gm()
 
