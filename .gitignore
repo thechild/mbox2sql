@@ -10,3 +10,6 @@ gmail_test.py
 gmail/
 
 .idea/
+
+*.sublime-*
+
