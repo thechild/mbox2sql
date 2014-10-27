@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import get_valid_filename
 from email.Header import decode_header
+from collections import OrderedDict
 import os
 import hashlib
 import uuid
@@ -213,6 +214,11 @@ def import_message(gmail_message, save_attachments=True):
 # return all messages in the inbox
 def get_inbox():
     return Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
+
+
+def get_threaded_inbox(inbox):
+    thread_ids = list(OrderedDict.fromkeys([m.thread_id for m in inbox]))
+    return [Message.objects.filter(thread_id=tid) for tid in thread_ids]
 
 
 def is_sender_legit(email):
