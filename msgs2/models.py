@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils.text import get_valid_filename
+from email.Header import decode_header
 import os
 import hashlib
 import uuid
@@ -26,7 +28,8 @@ class Address(models.Model):
 
 class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
-    recipients = models.ManyToManyField(Address, related_name='received_messages')
+    recipients = models.ManyToManyField(Address,
+                                        related_name='received_messages')
     members = models.ManyToManyField(Person, related_name='messages')
     subject = models.TextField()
     sent_date = models.DateTimeField()
@@ -161,7 +164,7 @@ def import_message(gmail_message, save_attachments=True):
     # see if the message is already in the db
     if len(Message.objects.filter(message_id=gmail_message.message_id)) > 0:
         # already exists, skip
-        print "Message Id %s already in database, skipping (Subject: %s)" % (gmail_message.message_id, gmail_message.subject)
+        # print "Message Id %s already in database, skipping (Subject: %s)" % (gmail_message.message_id, gmail_message.subject)
         # maybe update read status, or inbox status if I can figure out how to do that?
         return None
 
@@ -232,15 +235,23 @@ def handle_attachment(message, content, related=False):
     r = ''
     if related:
         r = '(r)'
-    print "saving attachment [%s] of type %s from message %d %s" % (content.get_filename(), content.get_content_type(), message.id, r)
+
+    filename, encoding = decode_header(content.get_filename())[0]
+    if encoding:
+        filename = filename.decode(encoding, errors='replace')
+
+    if not related:
+        print "saving attachment [%s] of type %s from message %d %s" % (filename, content.get_content_type(), message.id, r)
+
     a = Attachment()
-    a.filename = content.get_filename()  # TODO need to parse weird strings from this
+    a.filename = filename  # TODO need to parse weird strings from this
     if not a.filename:
         a.filename = str(uuid.uuid4())
     a.content_type = content.get_content_type()
-    a.stored_location = os.path.join(files_dir, str(message.id), a.filename)  # probably want to fix this too
+    a.stored_location = os.path.join(files_dir, str(message.id), get_valid_filename(a.filename))
+        # probably want to fix this too
     a.mime_related = related
-    # load the file
+        # load the file
     file_content = content.get_payload(decode=1)
     a.file_md5 = hashlib.md5(file_content).hexdigest()  # again, probably a better way to do this than all in memory
     # actually write it do disk - should wrap this in a try except too
