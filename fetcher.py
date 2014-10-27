@@ -80,7 +80,6 @@ class Fetcher():
         return fetched_messages
 
     def load_all_messages(self, step=100, since_date=None):
-        # TODO we need a way to have this fail and restart...
         gm = self.gm()
 
         load_start = time.time()
@@ -100,6 +99,8 @@ class Fetcher():
         num_added = 0
         steps = 0
 
+        failed_messages = {}
+
         for message_chunk in [all_messages[i:i + step] for i in range(0, len(all_messages), step)]:
             steps = steps + 1
             print "Fetching group {} of {}...".format(steps, (len(all_messages) - 1) / step + 1)
@@ -114,6 +115,7 @@ class Fetcher():
                     print "EEEE: Exception parsing message with uid {} and messageid {}".format(
                         message.uid, message.message_id)
                     print e
+                    failed_messages[message.uid] = (message, e)
 
                 if m:
                     num_added += 1
@@ -122,6 +124,11 @@ class Fetcher():
 
         print "***Fetched a total of {} messages in {} seconds, and added {} ({}%) to the db.".format(
             len(all_messages), load_end - load_start, num_added, num_added / len(all_messages))
+
+        if failed_messages:
+            print "***Encountered a total of {} messages that had an error.  Returning them.".format(
+                len(failed_messages.keys()))
+        return failed_messages
 
     # moves all messages in db out of the inbox, then moves those in the inbox (on gmail) into the db's inbox, adding
     # them if necessary, and setting the correct read/unread state
