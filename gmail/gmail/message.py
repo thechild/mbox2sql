@@ -103,7 +103,6 @@ class Message():
     #     self.gmail.imap.uid('STORE', self.uid, '-FLAGS', flag)
     #     if flag in self.flags: self.flags.remove(flag)
 
-
     def move_to(self, name):
         self.gmail.copy(self.uid, name, self.mailbox.name)
         if name not in ['[Gmail]/Bin', '[Gmail]/Trash']:
@@ -115,7 +114,7 @@ class Message():
     def parse_headers(self, message):
         hdrs = {}
         for hdr in message.keys():
-            hdrs[hdr] = message[hdr]
+            hdrs[unicode(hdr)] = message[unicode(hdr)]
         return hdrs
 
     def parse_flags(self, headers):
@@ -132,7 +131,7 @@ class Message():
     def parse_encoded(self, encoded_subject):
         dh = decode_header(encoded_subject)
         default_charset = 'ASCII'
-        return ''.join([ unicode(t[0], t[1] or default_charset) for t in dh ])
+        return ''.join([ unicode(t[0], t[1] or default_charset, 'replace') for t in dh ])
 
     def parse_recipients(self):
         self.to = getaddresses(self.message.get_all('to', []))
@@ -142,6 +141,7 @@ class Message():
         self.delivered_to = getaddresses(self.message.get_all('delivered_to', []))
         self.fr = getaddresses(self.message.get_all('from', []))[0]
         self.members = set([(self.parse_encoded(n),e) for (n, e) in self.to + self.cc + resent_tos + resent_ccs + [self.fr]])
+        self.fr = (self.parse_encoded(self.fr[0]), self.fr[1])
         return self.members
 
     def parse(self, raw_message):
@@ -153,7 +153,7 @@ class Message():
 
         self.parse_recipients()
 
-        self.subject = unicode(self.message['subject'].decode('utf-8', errors='ignore')) # TODO fix this
+        self.subject = self.parse_encoded(self.message['subject'])
 
         #if self.message.get_content_maintype() == "multipart":
         #    for content in self.message.walk():
@@ -197,10 +197,10 @@ class Message():
         else:
             encoding = 'ascii'
 
-        payload = content.get_payload()
+        payload = content.get_payload(decode=True)
 
         try:
-            decoded = payload.decode(encoding)
+            decoded = payload.decode(encoding, 'replace')
         except UnicodeDecodeError:
             decoded = payload.decode('utf8', errors='replace')
         except LookupError:
