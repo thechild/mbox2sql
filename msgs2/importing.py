@@ -37,16 +37,16 @@ def create_message(email_message):
 
 # saves content as a file and creates an Attachment connected to message
 def handle_attachment(message, content, related=False):
-    r = ''
-    if related:
-        r = '(r)'
+#    r = ''
+#    if related:
+#        r = '(r)'
 
     filename, encoding = decode_header(content.get_filename())[0]
     if encoding:
         filename = filename.decode(encoding, errors='replace')
 
-    if not related:
-        print "saving attachment [%s] of type %s from message %d %s" % (filename, content.get_content_type(), message.id, r)
+    #if not related:
+    #    print "saving attachment [%s] of type %s from message %d %s" % (filename, content.get_content_type(), message.id, r)
 
     a = Attachment()
     a.filename = filename  # TODO need to parse weird strings from this
