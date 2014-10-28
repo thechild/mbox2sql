@@ -10,8 +10,10 @@ from msgs2.importing import import_message
 ###
 ### For accounts that have already been loaded, call load_new_messages to bring them up to date with server
 ###
-### For all accounts, call sync_inbox to correctly set the inbox flags.  Note this is currently just one-way
+### For all accounts, call sync_inbox_state to correctly set the inbox flags.  Note this is currently just one-way
 ### Sync - inbox flags propagage from server to db, but not the other way around.
+
+### TODO should combine load_all_messages and load_new_messages (or at least the logic for error handling etc)
 
 
 class Fetcher():
@@ -59,37 +61,13 @@ class Fetcher():
             new_messages.append(nm)
         return nm
 
-    def load_new_messages(self, newest_time=datetime.datetime.today() - datetime.timedelta(days=30), full_pull=False,
-                          prefetch=True, pull_threads=False):
-        """Loads new messages into the database, to be run as a batch job
-
-        :param newest_time: optional datetime setting the furthest back the method will pull.  defaults to 30 days
-        :param full_pull: optional boolean indicating that all messages since newest_time should be pullled.  Default is
-        to only pull since the newest message in the database
-        :param prefetch: optional boolean indicating whether messages should be prefetched or individually fetched (false)
-        :param pull_threads: optional boolean enabling pulling of threads instead of individual messages.  Slows things down.
-        :returns list of messages pulled
-        """
-        gm = self.gm()
-        # find the newest message in the database
-
-        if (not full_pull) and Message.objects.exists():
+    # loads all messages since the last time it was run or 30 days ago, whichever is smaller
+    # set newest_time to an older time to get older messages, or just use load_all_messages
+    def load_new_messages(self, newest_time=datetime.datetime.today() - datetime.timedelta(days=30)):
+        if Message.objects.exists():
             newest_time = max(newest_time, Message.objects.latest(field_name='sent_date').sent_date)
 
-        print "Fetching all messages since {}".format(newest_time)
-
-        messages = gm.all_mail().mail(after=newest_time, prefetch=prefetch)  # TODO this is probably buggy
-
-        for (index, m) in enumerate(messages):
-            print "Fetching message ({}/{})".format(index+1, len(messages))
-            if pull_threads:
-                m.fetch_thread()
-                new_messages = [import_message(m) for m in m.thread]
-            else:
-                m.fetch()
-                new_messages = import_message(m)
-
-        return new_messages
+        return self.load_all_messages(since_date=newest_time)
 
     def fetch_multiple_messages(self, messages):
         message_dict = {m.uid: m for m in messages}
@@ -108,7 +86,6 @@ class Fetcher():
         load_start = time.time()
 
         print "Loading all messages since {} in steps of {}...".format(since_date, step)
-        # this should be called very infrequently.
         # loads all messages since since_date (or forever if it is None)
         # in blocks of step (default 10)
 
@@ -135,7 +112,7 @@ class Fetcher():
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except Exception as e:
-                    print "EEEE: Exception parsing message with uid {} and messageid {}".format(
+                    print "XXXX: Exception parsing message with uid {} and messageid {}".format(
                         message.uid, message.message_id)
                     print e
                     failed_messages[message.uid] = (message, e)
@@ -145,8 +122,8 @@ class Fetcher():
 
         load_end = time.time()
 
-        print "***Fetched a total of {} messages in {} seconds, and added {} ({}%) to the db.".format(
-            len(all_messages), load_end - load_start, num_added, num_added / len(all_messages))
+        print "***Fetched a total of {} messages in {:.2f} seconds, and added {} ({:.2f}%) to the db.".format(
+            len(all_messages), load_end - load_start, num_added, 100.0 * num_added / len(all_messages))
 
         if failed_messages:
             print "***Encountered a total of {} messages that had an error.  Returning them.".format(
@@ -172,6 +149,8 @@ class Fetcher():
             dbm.flags.filter(flag=MessageFlag.UNREAD_FLAG).delete()
             if not message.is_read():
                 dbm.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
+
+        print "Updated inbox - there are {} messages in the inbox.".format(len(inbox_messages))
 
 
 def clean_inbox():
