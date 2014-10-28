@@ -90,7 +90,7 @@ class MessageBody(models.Model):
     content = models.TextField()
 
     def __unicode__(self):
-        return "[{}]: {}".format(self.type, self.content[:100])
+        return "[{}]: {}".format(self.type, self.content)
 
 
 class Attachment(models.Model):
