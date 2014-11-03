@@ -68,7 +68,7 @@ def handle_attachment(message, content, related=False):
     a.save()
 
 
-def import_message(gmail_message, save_attachments=True):
+def import_message(gmail_message, account, save_attachments=True):
     # see if the message is already in the db
     if len(Message.objects.filter(message_id=gmail_message.message_id)) > 0:
         # already exists, skip
@@ -79,7 +79,8 @@ def import_message(gmail_message, save_attachments=True):
     new_message = Message(subject=gmail_message.subject,
                           sent_date=gmail_message.sent_at,
                           message_id=gmail_message.message_id,
-                          thread_id=gmail_message.thread_id)
+                          thread_id=gmail_message.thread_id,
+                          account=account)
     # new_message.save()
     # add the senders
     new_message.sender = get_or_create_person(gmail_message.fr)

@@ -1,7 +1,7 @@
 import gmail.gmail as gmail
 import datetime
 import time
-from msgs2.models import Message, MessageFlag
+from msgs2.models import Message, MessageFlag, Account
 from msgs2.importing import import_message
 
 ### Usage:
@@ -18,6 +18,7 @@ from msgs2.importing import import_message
 
 class Fetcher():
     _gmail = None
+    _account = None
 
     def login(self):
         """
@@ -37,6 +38,16 @@ class Fetcher():
         else:
             print "error logging in."
         self._gmail = gm
+
+        accs = Account.objects.filter(address=un)
+        if accs.count() == 0:
+            self._account = Account(name='Gmail',
+                                    server_type=Account.TYPE_GMAIL,
+                                    address=un)
+            self._account.save()
+        else:
+            self._account = accs[0]
+
         return self._gmail
 
     def gm(self):
@@ -57,7 +68,7 @@ class Fetcher():
         for (index, m) in enumerate(inbox):
             print "fetching message (%s/%s)" % (index+1, len(inbox))
             m.fetch()
-            nm = import_message(m)
+            nm = import_message(m, self._account)
             new_messages.append(nm)
         return nm
 
@@ -108,7 +119,7 @@ class Fetcher():
             fetched_messages = self.fetch_multiple_messages(message_chunk)
             for message in fetched_messages.values():
                 try:
-                    m = import_message(message)
+                    m = import_message(message, self._account)
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except Exception as e:
@@ -143,7 +154,7 @@ class Fetcher():
             try:
                 dbm = Message.objects.get(message_id=message.message_id)
             except Message.DoesNotExist:
-                dbm = import_message(message)
+                dbm = import_message(message, self._account)
 
             dbm.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
             dbm.flags.filter(flag=MessageFlag.UNREAD_FLAG).delete()

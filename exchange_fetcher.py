@@ -1,6 +1,6 @@
 import exchange
 import email
-from msgs2.models import Message, Attachment, MessageBody, Header, MessageFlag
+from msgs2.models import Message, Attachment, MessageBody, Header, MessageFlag, Account
 import msgs2.importing as importing
 import uuid
 import os
@@ -11,6 +11,13 @@ from datetime import datetime
 class ExchangeFetcher():
 	def __init__(self, url, username, password):
 		self.exchange = exchange.ExchangeMail(url, username, password)
+
+		accs = Account.objects.filter(address=username)
+		if accs.count() == 0:
+			self.account = Account(name='Exchange', server_type=Account.TYPE_EXCHANGE, address=username)
+			self.account.save()
+		else:
+			self.account = accs[0]
 
 	def load_inbox(self):
 		self.raw_inbox = self.exchange.get_inbox()
@@ -93,7 +100,8 @@ class ExchangeFetcher():
 			m = Message(subject=message['t:Subject'],
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
 						message_id=message['t:ItemId'],
-						thread_id=message['t:ConversationIndex']
+						thread_id=message['t:ConversationIndex'],
+						account = self.account
 						)
 			m.sender = importing.get_or_create_person((
 				message['t:From']['t:Mailbox']['t:Name'],
