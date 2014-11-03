@@ -22,6 +22,19 @@ class Address(models.Model):
         return "{}".format(self.email)
 
 
+class Account(models.Model):
+    TYPE_EXCHANGE = 'E'
+    TYPE_GMAIL = 'G'
+
+    SERVER_TYPES = (
+        (TYPE_EXCHANGE, 'Exchange'),
+        (TYPE_GMAIL, 'Gmail'))
+
+    name = models.CharField(max_length=200)
+    server_type = models.CharField(max_length=1, choices=SERVER_TYPES)
+    address = models.CharField(max_length=200)
+
+
 class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
     recipients = models.ManyToManyField(Address,
@@ -31,6 +44,7 @@ class Message(models.Model):
     sent_date = models.DateTimeField()
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
+    account = models.ForeignKey(Account, related_name='messages', null=True)
 
     @property
     def is_unread(self):
