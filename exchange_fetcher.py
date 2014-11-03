@@ -24,7 +24,7 @@ class ExchangeFetcher():
 		self.processed_inbox = [self.exchange.process_items(m) for m in self.raw_inbox]
 		print "Loaded exchange mailbox, found {} messages".format(len(self.processed_inbox))
 		for message in self.processed_inbox:
-			self.load_item(message)
+			self.load_item(message, inbox=True)
 
 	def walk_message(self, mime_message, db_message):
 		def parse_attachment(message_part):
@@ -87,7 +87,7 @@ class ExchangeFetcher():
 									content=html)
 			body_html.save()
 
-	def load_item(self, item):
+	def load_item(self, item, inbox=False):
 		if item[0]['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
 			message = item[0]['m:GetItemResponseMessage']['m:Items']['t:Message']
 			
@@ -138,6 +138,9 @@ class ExchangeFetcher():
 
 			if message['t:IsRead'] == u'true':
 				m.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
+
+			if inbox:
+				m.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
 
 			return m
 		else:
