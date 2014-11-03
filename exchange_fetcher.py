@@ -1,7 +1,7 @@
 import exchange
 import email
 from msgs2.models import Message, Attachment, MessageBody, Header, MessageFlag
-import importing
+import msgs2.importing as importing
 import uuid
 import os
 from django.utils.text import get_valid_filename
@@ -15,7 +15,8 @@ class ExchangeFetcher():
 	def load_inbox(self):
 		self.raw_inbox = self.exchange.get_inbox()
 		self.processed_inbox = [self.exchange.process_items(m) for m in self.raw_inbox]
-		for message in self.process_inbox:
+		print "Loaded exchange mailbox, found {} messages".format(len(self.processed_inbox))
+		for message in self.processed_inbox:
 			self.load_item(message)
 
 	def walk_message(self, mime_message, db_message):
@@ -53,7 +54,7 @@ class ExchangeFetcher():
 		def decode_part(part):
 			return unicode(
 				part.get_payload(decode=True),
-				part.get_content_charset(),
+				part.get_content_charset() or 'ascii',
 				'replace').encode('utf8', 'replace')
 
 		body = ""
@@ -81,7 +82,7 @@ class ExchangeFetcher():
 
 	def load_item(self, item):
 		if item[0]['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
-			message = item[0]['m:GetItemResponseMessage']['m:Items']['m:Message']
+			message = item[0]['m:GetItemResponseMessage']['m:Items']['t:Message']
 			
 			if Message.objects.filter(message_id=message['t:ItemId']).count() > 0:
 				return None
@@ -101,11 +102,19 @@ class ExchangeFetcher():
 			m.members.add(m.sender.person)
 
 			def parse_recipients(recipients, msg):
-				for person in recipients:
+				def import_person(person):
 					p = importing.get_or_create_person((
 						person['t:Name'], person['t:EmailAddress']))
 					msg.recipients.add(p)
-					msg.members.add(p)
+					msg.members.add(p.person)
+
+				if hasattr(recipients['t:Mailbox'], 'keys'):
+					print "importing person {}".format(recipients['t:Mailbox'])
+					import_person(recipients['t:Mailbox'])
+				else:
+					for person in recipients['t:Mailbox']:
+						print "importing person {}".format(person)
+						import_person(person)
 
 			parse_recipients(message['t:ToRecipients'], m)
 
@@ -123,4 +132,6 @@ class ExchangeFetcher():
 				m.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
 
 			return m
-		return None
+		else:
+			print "One message failed to load: {}".format(item[0])
+			return None
