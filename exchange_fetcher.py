@@ -26,6 +26,14 @@ class ExchangeFetcher():
 		for message in self.processed_inbox:
 			self.load_item(message, inbox=True)
 
+	def load_archive(self):
+		raw_archive = self.exchange.get_archive()
+		processed_inbox = [self.exchange.process_items(m) for m in raw_archive]
+		print "Loaded exchange mailbox, found {} messages".format(len(processed_inbox))
+		for message in processed_inbox:
+			self.load_item(message, inbox=False)
+
+
 	def walk_message(self, mime_message, db_message):
 		def parse_attachment(message_part):
 			content_disposition = message_part.get("Content-Disposition", None)
@@ -117,11 +125,9 @@ class ExchangeFetcher():
 					msg.members.add(p.person)
 
 				if hasattr(recipients['t:Mailbox'], 'keys'):
-					print "importing person {}".format(recipients['t:Mailbox'])
 					import_person(recipients['t:Mailbox'])
 				else:
 					for person in recipients['t:Mailbox']:
-						print "importing person {}".format(person)
 						import_person(person)
 
 			parse_recipients(message['t:ToRecipients'], m)
