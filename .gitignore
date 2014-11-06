@@ -1,5 +1,4 @@
 *.pyc
-manage.py
 *.sqlite3
 msgs/mbox
 db.sqlite3.old
