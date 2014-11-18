@@ -5,6 +5,7 @@ db.sqlite3.old
 files/
 msgs/mbox2
 pw
+pws
 gmail_test.py
 gmail/
 
@@ -12,3 +13,5 @@ gmail/
 
 *.sublime-*
 
+
+load.py
