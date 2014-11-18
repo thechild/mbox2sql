@@ -42,6 +42,12 @@ class ExchangeFetcher():
 				if bool(content_disposition and dispositions[0].lower() == 'attachment'):
 					# what happens to the related stuff?
 					file_data = message_part.get_payload(decode=True)
+					if message_part.get_content_type().split('/')[0] == 'message':
+						# need to debug this to make sure these types of messages actually get processed
+						# this happens when messages are attached to another message
+						# I guess I should treat them as attachments, but normal code path doesn't work
+						return None
+
 					a = Attachment()
 					a.content_type = message_part.get_content_type()
 
