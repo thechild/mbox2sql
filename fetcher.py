@@ -136,8 +136,11 @@ class Fetcher():
 
         load_end = time.time()
 
-        print "***Fetched a total of {} messages in {:.2f} seconds, and added {} ({:.2f}%) to the db.".format(
-            len(all_messages), load_end - load_start, num_added, 100.0 * num_added / len(all_messages))
+        if len(all_messages) > 0:                
+            print "***Fetched a total of {} messages in {:.2f} seconds, and added {} ({:.2f}%) to the db.".format(
+                len(all_messages), load_end - load_start, num_added, 100.0 * num_added / len(all_messages))
+        else:
+            print "***There were no new messages."
 
         if failed_messages:
             print "***Encountered a total of {} messages that had an error.  Returning them.".format(
@@ -147,6 +150,7 @@ class Fetcher():
     # moves all messages in db out of the inbox, then moves those in the inbox (on gmail) into the db's inbox, adding
     # them if necessary, and setting the correct read/unread state
     def sync_inbox_state(self):
+        print "Beginning inbox synchronization..."
         gm = self.gm()
 
         clean_inbox()
