@@ -20,16 +20,19 @@ class Fetcher():
     _gmail = None
     _account = None
 
-    def login(self):
+    def login(self, un=None, pw=None):
         """
 
         :rtype : Gmail object
         """
-        with open('pw', 'r') as pwf:
-            pw = pwf.read()
-            if pw:
-                print "using saved password"
-        un = "thechild@gmail.com"
+        if not pw:
+            with open('pw', 'r') as pwf:
+                pw = pwf.read()
+                if pw:
+                    print "using saved password"
+
+        if not un:
+            un = "thechild@gmail.com"
 
         print "logging in to gmail as %s" % (un)
         gm = gmail.login(un, pw)
