@@ -111,7 +111,7 @@ class ExchangeFetcher():
 			e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
 			
 			# this is currently saving everything in UTC (Z) time, not sure what I'm doing with Gmail
-			m = Message(subject=message['t:Subject'],
+			m = Message(subject=message['t:Subject'] or u'',
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
 						message_id=message['t:ItemId'],
 						thread_id=message['t:ConversationIndex'],
