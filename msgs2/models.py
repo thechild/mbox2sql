@@ -9,7 +9,7 @@ class Person(models.Model):
     name = models.CharField(max_length=200)
 
     def __unicode__(self):
-        addresses = ', '.join(str.format("<%s>", x.email) for x in self.addresses)
+        addresses = ', '.join(str.format("<%s>", x.email) for x in self.addresses.all())
         return "<Person %s [%s]>" % (self.name, addresses)
 
 
