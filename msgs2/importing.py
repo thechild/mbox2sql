@@ -13,7 +13,7 @@ def get_or_create_person(address_tuple):
     if len(existing_addresses) == 0:
         new_person = Person(name=name)
         new_person.save()
-        new_address = Address(email=email_address, person=new_person)
+        new_address = Address(email=email_address.lower(), person=new_person)
         new_address.save()
         return new_address
     elif len(existing_addresses) > 0:
