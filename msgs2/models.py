@@ -34,6 +34,13 @@ class Account(models.Model):
     server_type = models.CharField(max_length=1, choices=SERVER_TYPES)
     address = models.CharField(max_length=200)
 
+    def email_address(self):
+        if self.server_type == self.TYPE_EXCHANGE:
+            parts = self.address.split('\\')
+            return u"{}@{}".format(parts[1], parts[0])
+        else:
+            return self.address
+
     def __unicode__(self):
         return "{}: {}".format(self.name, self.address)
 
