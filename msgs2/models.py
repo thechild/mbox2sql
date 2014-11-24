@@ -95,8 +95,8 @@ class MessageFlag(models.Model):
     message = models.ForeignKey(Message, related_name='flags')
     flag = models.CharField(max_length=1, choices=FLAGS)
 
-    def __unicode_(self):
-        return [y[0] for y in MessageFlag.FLAGS if y[0] == self.flag][0]
+    def __unicode__(self):
+        return [y[1] for y in MessageFlag.FLAGS if y[0] == self.flag][0]
 
 
 class Header(models.Model):
