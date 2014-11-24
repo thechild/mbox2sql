@@ -102,10 +102,30 @@ class ExchangeFetcher():
 			body_html.save()
 
 	def load_item(self, item, inbox=False):
+		def set_flags(message, db_message):
+			if message['t:IsRead'] == u'true':
+				if not db_message.flags.filter(flag=MessageFlag.UNREAD_FLAG).exists():
+					db_message.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
+
+			if inbox:
+				if not db_message.flags.filter(flag=MessageFlag.INBOX_FLAG).exists():
+					db_message.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
+					print db_message.flags.all()
+					print "exchange message added to inbox"
+				else:
+					print "exchange message already in inbox"
+			else:
+				print "exchange message not added to inbox"
+
+			db_message.save()
+
 		if item[0]['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
 			message = item[0]['m:GetItemResponseMessage']['m:Items']['t:Message']
 			
-			if Message.objects.filter(message_id=message['t:ItemId']).count() > 0:
+			existing_messages = Message.objects.filter(message_id=message['t:ItemId'])
+			if existing_messages.count() > 0:
+				print "message already in db - count %s" % existing_messages.count()
+				set_flags(message, existing_messages[0])
 				return None
 			# maybe use this for attachments? or pull them from exchange somehow?
 			e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
@@ -147,13 +167,9 @@ class ExchangeFetcher():
 			for header in message['t:InternetMessageHeaders']['t:InternetMessageHeader']:
 				m.headers.add(Header(key=header['@HeaderName'], value=header['#text']))
 			# add flags - read, inbox, etc
+			set_flags(message, m)
 
-			if message['t:IsRead'] == u'true':
-				m.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
-
-			if inbox:
-				m.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
-
+			m.save()
 			return m
 		else:
 			print "One message failed to load: {}".format(item[0])
