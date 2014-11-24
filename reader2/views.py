@@ -1,6 +1,15 @@
 from msgs2.models import Person, Address, Account, Message, MessageBody, MessageFlag, Header, Attachment, ToDo
+from collections import OrderedDict
+from django.shortcuts import render_to_response
 
 # Create your views here.
+
+def incoming_list(request):
+	incoming_inbox = parse_inbox()['primary']
+	return render_to_response('thread_list.html', {'messages': incoming_inbox})
+
+
+### Helper functions ###
 
 def get_inbox(account=None):
 	full_inbox = Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
@@ -13,10 +22,10 @@ def get_inbox(account=None):
 def is_sender_legit(email, account=None):
 	if not account:
 		accounts = Account.objects.all()
-		return Message.objects.filter(sender__email__in=[account.address for account in accounts],
+		return Message.objects.filter(sender__email__in=[account.email_address() for account in accounts],
 									  members__addresses__email=email).exists()
 	else:
-		return Message.objects.filter(sender__email=account.address,
+		return Message.objects.filter(sender__email=account.email_address(),
 									  members__addresses__email=email).exists()
 
 
@@ -44,3 +53,15 @@ def parse_inbox(account=None):
 			'new_sender': new_sender_inbox,
 			'repeat_sender': repeat_sender_inbox}
 
+# note, only threads messages in the passed in object, maintaining order
+# should be replaced by a first class database thread support
+def thread_messages(inbox):
+	threads = OrderedDict()
+	for m in inbox:
+		if m.thread_id in threads:
+			print "appending message to thread %s" % m.thread_id
+			threads[m.thread_id] = threads[m.thread_id] + [m]
+		else:
+			print "new thread %s" % m.thread_id
+			threads[m.thread_id] = [m]
+	return threads
