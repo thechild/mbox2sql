@@ -1,0 +1,28 @@
+{% block content %}
+{% if messages %}
+    <table class="table table-hover">
+        <thead><tr>
+            <th>Subject</th>
+            <th>Sender</th>
+            <th>Sent Date</th>
+            <th>Messages</th>
+            <th>Attachment?</th>
+            <th>Account</th>
+        </tr></thead>
+        {% for message in messages %}
+        <tbody><tr>
+            <td><a href="">
+                {% if message.subject %}{{ message.subject }}
+                {% else %}&lt;No Subject&gt;{% endif %}</a></td>
+            <td><a href="">{{ message.sender.person.name }}</a></td>
+            <td>{{ message.sent_date }}</td>
+            <td></td>
+            <td>{{ message.attachments.count }}</td>
+            <td>{{ message.account.address }}</td>
+        </tr></tbody>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>No messages available.</p>
+{% endif %}
+{% endblock %}
