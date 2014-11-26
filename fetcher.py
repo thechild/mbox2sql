@@ -153,7 +153,7 @@ class Fetcher():
         print "Beginning inbox synchronization..."
         gm = self.gm()
 
-        clean_inbox()
+        self.clean_inbox()
 
         # find messages that are in the inbox, and flag them as such, adding to db if not already there
         inbox_messages = gm.inbox().mail(prefetch=True)
@@ -171,8 +171,8 @@ class Fetcher():
         print "Updated inbox - there are {} messages in the inbox.".format(len(inbox_messages))
 
 
-def clean_inbox():
-    MessageFlag.objects.filter(flag=MessageFlag.INBOX_FLAG).delete()
+    def clean_inbox(self):
+        MessageFlag.objects.filter(message__account=self._account).filter(flag=MessageFlag.INBOX_FLAG).delete()
 
 
 if __name__ == "__main__":
