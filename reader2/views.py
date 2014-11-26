@@ -12,7 +12,7 @@ def incoming_list(request):
 ### Helper functions ###
 
 def get_inbox(account=None):
-	full_inbox = Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
+	full_inbox = Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG).order_by('-sent_date')
 	if account:
 		return full_inbox.filter(account=account)
 	else:
