@@ -52,16 +52,3 @@ def parse_inbox(account=None):
 	return {'primary': primary_inbox,
 			'new_sender': new_sender_inbox,
 			'repeat_sender': repeat_sender_inbox}
-
-# note, only threads messages in the passed in object, maintaining order
-# should be replaced by a first class database thread support
-def thread_messages(inbox):
-	threads = OrderedDict()
-	for m in inbox:
-		if m.thread_id in threads:
-			print "appending message to thread %s" % m.thread_id
-			threads[m.thread_id] = threads[m.thread_id] + [m]
-		else:
-			print "new thread %s" % m.thread_id
-			threads[m.thread_id] = [m]
-	return threads
