@@ -58,11 +58,11 @@ class Message(models.Model):
 
     @property
     def is_unread(self):
-        return self.flags.exists(flag=MessageFlag.UNREAD_FLAG)
+        return self.flags.filter(flag=MessageFlag.UNREAD_FLAG).exists()
 
     @property
     def is_in_inbox(self):
-        return self.flags.exists(flag=MessageFlag.INBOX_FLAG)
+        return self.flags.filter(flag=MessageFlag.INBOX_FLAG).exists()
 
     @property
     def is_starred(self):
