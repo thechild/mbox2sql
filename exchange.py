@@ -119,6 +119,7 @@ class ExchangeMail():
 		else:
 			folder_id = self.find_folder_named(folder_name)
 			body = self.get_folder_items(folder_id=folder_id)
+		print "Sending request for folder..."
 		raw_messages = self.service.send(body)
 		items = raw_messages.xpath(u'//m:FindItemResponseMessage/m:RootFolder/t:Items/t:Message', namespaces=NAMESPACES)
 		ids = items[0].xpath('//t:ItemId', namespaces=NAMESPACES)
@@ -127,6 +128,7 @@ class ExchangeMail():
 			tid = id.get('Id')
 			tidck = id.get('ChangeKey')
 			root = self.get_item(tid, tidck, format=u"AllProperties")
+			print "Sending request for message {}".format(tid)
 			msgxml = self.service.send(root)
 			msgs.append(msgxml)
 		return msgs
