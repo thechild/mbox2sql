@@ -2,7 +2,7 @@ import gmail.gmail as gmail
 import datetime
 import time
 from msgs2.models import Message, MessageFlag, Account
-from msgs2.importing import import_message
+import msgs2.importing as importing
 
 ### Usage:
 ### For a new account, call load_all_messages to get the full history (at least since since_date) into the db
@@ -71,7 +71,7 @@ class Fetcher():
         for (index, m) in enumerate(inbox):
             print "fetching message (%s/%s)" % (index+1, len(inbox))
             m.fetch()
-            nm = import_message(m, self._account)
+            nm = importing.import_message(m, self._account)
             new_messages.append(nm)
         return nm
 
@@ -122,7 +122,7 @@ class Fetcher():
             fetched_messages = self.fetch_multiple_messages(message_chunk)
             for message in fetched_messages.values():
                 try:
-                    m = import_message(message, self._account)
+                    m = importing.import_message(message, self._account)
                 except (KeyboardInterrupt, SystemExit):
                     raise
                 except Exception as e:
@@ -153,23 +153,20 @@ class Fetcher():
         print "Beginning inbox synchronization..."
         gm = self.gm()
 
-        self.clean_inbox()
-
         # find messages that are in the inbox, and flag them as such, adding to db if not already there
         inbox_messages = gm.inbox().mail(prefetch=True)
-        for message in inbox_messages:
-            try:
-                dbm = Message.objects.get(message_id=message.message_id)
-            except Message.DoesNotExist:
-                dbm = import_message(message, self._account)
+        print "hitting database for {} messages".format(len(inbox_messages))
+        db_inbox_messages = Message.objects.filter(message_id__in=[message.message_id for message in inbox_messages])
+        print "syncing {} inbox flags".format(len(db_inbox_messages))
+        importing.sync_flags(self._account, db_inbox_messages, MessageFlag.INBOX_FLAG)
 
-            dbm.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
-            dbm.flags.filter(flag=MessageFlag.UNREAD_FLAG).delete()
-            if not message.is_read():
-                dbm.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
+        # same for unread messages, though only ones in the inbox
+        unread_messages = [m for m in inbox_messages if not m.is_read()]
+        db_unread_messages = Message.objects.filter(message_id__in=[message.message_id for message in unread_messages])
+        print "syncing {} unread flags".format(len(db_unread_messages))
+        importing.sync_flags(self._account, db_unread_messages, MessageFlag.UNREAD_FLAG)
 
         print "Updated inbox - there are {} messages in the inbox.".format(len(inbox_messages))
-
 
     def clean_inbox(self):
         MessageFlag.objects.filter(message__account=self._account).filter(flag=MessageFlag.INBOX_FLAG).delete()
