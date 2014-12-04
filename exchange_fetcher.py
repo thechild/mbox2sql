@@ -39,20 +39,6 @@ class ExchangeFetcher():
 		if len(db_inbox_messages) != len(self.processed_inbox):
 			print "ERROR - Incorrect number of messages in exchange inbox!!"
 
-	def sync_inbox(self, inbox_messages):
-		# make sure all messages in inbox_messages are in the inbox
-		# can probably remove this loop as long as we're calling load_item with inbox=True...
-		for message in inbox_messages:
-			if not message.is_in_inbox:
-				message.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
-
-		# remove all messages that aren't in inbox_messages from inbox
-		bad_inbox_flags = MessageFlag.objects.filter(message__account=self.account)
-		bad_inbox_flags = bad_inbox_flags.filter(flag=MessageFlag.INBOX_FLAG)
-		bad_inbox_flags = bad_inbox_flags.exclude(message__in=inbox_messages)
-		bad_inbox_flags.delete()
-
-
 	def load_archive(self):
 		raw_archive = self.exchange.get_archive()
 		processed_inbox = [self.exchange.process_items(m) for m in raw_archive]
