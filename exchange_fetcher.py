@@ -31,8 +31,11 @@ class ExchangeFetcher():
 		for message in self.processed_inbox:
 			inbox_messages.append(self.load_item(message, inbox=True))
 
+		print "syncing {} inbox flags".format(len(inbox_messages))
 		importing.sync_flags(self.account, inbox_messages, MessageFlag.INBOX_FLAG)
-		importing.sync_flags(self.account, [m for m in inbox_messages if m.is_unread], MessageFlag.UNREAD_FLAG)
+		unread_messages = [m for m in inbox_messages if m.is_unread]
+		print "syncing {} unread flags".format(len(unread_messages))
+		importing.sync_flags(self.account, unread_messages, MessageFlag.UNREAD_FLAG)
 
 		# make sure the right number of messages are in the inbox
 		db_inbox_messages = MessageFlag.objects.filter(message__account=self.account).filter(flag=MessageFlag.INBOX_FLAG)
