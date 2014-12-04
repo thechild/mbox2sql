@@ -7,14 +7,10 @@ msgs/mbox2
 pw
 pws
 uns
+urls
 gmail_test.py
 gmail/
 
 .idea/
 
 *.sublime-*
-
-
-load.py
-
-urls
