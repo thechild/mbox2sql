@@ -20,7 +20,9 @@ class ExchangeFetcher():
 			self.account = accs[0]
 
 	def load_inbox(self):
+		print "Getting inbox..."
 		self.raw_inbox = self.exchange.get_inbox()
+		print "Processing inbox..."
 		self.processed_inbox = [self.exchange.process_items(m) for m in self.raw_inbox]
 		print "Loaded exchange mailbox, found {} messages".format(len(self.processed_inbox))
 		for message in self.processed_inbox:
@@ -110,12 +112,6 @@ class ExchangeFetcher():
 			if inbox:
 				if not db_message.flags.filter(flag=MessageFlag.INBOX_FLAG).exists():
 					db_message.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
-					print db_message.flags.all()
-					print "exchange message added to inbox"
-				else:
-					print "exchange message already in inbox"
-			else:
-				print "exchange message not added to inbox"
 
 			db_message.save()
 
@@ -124,7 +120,7 @@ class ExchangeFetcher():
 			
 			existing_messages = Message.objects.filter(message_id=message['t:ItemId'])
 			if existing_messages.count() > 0:
-				print "message already in db - count %s" % existing_messages.count()
+				# print "message already in db - count %s" % existing_messages.count()
 				set_flags(message, existing_messages[0])
 				return None
 			# maybe use this for attachments? or pull them from exchange somehow?
