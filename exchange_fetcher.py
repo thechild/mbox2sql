@@ -122,7 +122,7 @@ class ExchangeFetcher():
 			if existing_messages.count() > 0:
 				# print "message already in db - count %s" % existing_messages.count()
 				set_flags(message, existing_messages[0])
-				return None
+				return existing_messages[0]
 			# maybe use this for attachments? or pull them from exchange somehow?
 			e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
 			
