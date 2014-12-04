@@ -119,8 +119,12 @@ class ExchangeFetcher():
 
 	def load_item(self, item, inbox=False):
 		def set_flags(message, db_message):
+			db_message_unread_flag = db_message.flags.filter(flag=MessageFlag.UNREAD_FLAG)
 			if message['t:IsRead'] == u'true':
-				if not db_message.flags.filter(flag=MessageFlag.UNREAD_FLAG).exists():
+				if db_message_unread_flag.exists():
+					db_message_unread_flag.delete()
+			else: # message should be marked unread
+				if not db_message_unread_flag.exists():
 					db_message.flags.add(MessageFlag(flag=MessageFlag.UNREAD_FLAG))
 
 			if inbox:
