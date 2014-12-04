@@ -7,6 +7,31 @@ from django.utils.text import get_valid_filename
 from email.Header import decode_header
 
 
+def sync_flags(account, flagged_messages, flag):
+    # make sure all messages in flagged_messages are flagged
+    # can probably remove this loop as long as we're calling load_item with inbox=True...
+    added = 0
+    for message in flagged_messages:
+        if flag == MessageFlag.INBOX_FLAG:
+            if not message.is_in_inbox:
+                message.flags.add(MessageFlag(flag=flag))
+                added += 1
+        elif flag == MessageFlag.UNREAD_FLAG:
+            if not message.is_unread:
+                message.flags.add(MessageFlag(flag=flag))
+                added += 1
+        else:
+            raise Exception("Flag %s is not a syncable flag." % flag)
+
+    # remove all messages that aren't in inbox_messages from inbox
+    bad_inbox_flags = MessageFlag.objects.filter(message__account=account)
+    bad_inbox_flags = bad_inbox_flags.filter(flag=flag)
+    bad_inbox_flags = bad_inbox_flags.exclude(message__in=flagged_messages)
+    removed = len(bad_inbox_flags)
+    bad_inbox_flags.delete()
+
+    print "Added {} flags and removed {} flags.".format(added, removed)
+
 def get_or_create_person(address_tuple):
     name, email_address = address_tuple
     existing_addresses = Address.objects.filter(email=email_address.lower())
