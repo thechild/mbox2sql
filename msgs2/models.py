@@ -66,7 +66,7 @@ class Message(models.Model):
 
     @property
     def is_starred(self):
-        return self.flags.exists(flag=MessageFlag.STARRED_FLAG)
+        return self.flags.filter(flag=MessageFlag.STARRED_FLAG).exists()
 
     def archive(self):
         self.flags.filter(flag=MessageFlag.INBOX_FLAG).delete()
