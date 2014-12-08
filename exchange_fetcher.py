@@ -170,10 +170,13 @@ class ExchangeFetcher():
 					for person in recipients['t:Mailbox']:
 						import_person(person)
 
-			parse_recipients(message['t:ToRecipients'], m)
+			if u't:ToRecipients' in message.keys():
+				parse_recipients(message['t:ToRecipients'], m)
 
 			if u't:CcRecipients' in message.keys():
 				parse_recipients(message['t:CcRecipients'], m)
+
+			# does this handle messages with no recipients correctly?
 
 			# walk through the mime content to get the bodies and attachments
 			self.walk_message(e_message, m)
