@@ -22,7 +22,8 @@ class Address(models.Model):
 
     def as_json(self):
         return {'name': self.person.name,
-                'email': self.email}
+                'email': self.email,
+                'address_id': self.id}
 
 
 class Account(models.Model):
@@ -58,6 +59,7 @@ class Message(models.Model):
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
     account = models.ForeignKey(Account, related_name='messages', null=True)
+    # need to add support for a snippet, probably dynamic
 
     @property
     def is_unread(self):
