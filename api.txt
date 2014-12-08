@@ -1,0 +1,53 @@
+# Inbox
+
+GET /v1/inbox/primary
+[ Returns a list of threads that are in the primary inbox ]
+
+GET /v1/inbox/mass
+[ Returns a list of threads that are in the mass inbox ]
+
+GET /v1/inbox/new
+[ Returns a list of threads that are in the new message inbox ]
+
+GET /v1/inbox/
+[ Returns a dictionary with keys for "primary", "mass", "new" each with the corresponding list of threads.  Similar to calling each of the inbox/type endpoints sequentially ]
+
+# Threads
+
+GET /v1/thread/{id}
+[ Returns a list of messages in the given thread ]
+
+POST /v1/thread/{id}/archive
+[ Archives all messages in the given thread ]
+
+POST /v1/thread/{id}/read
+[ Marks all messages in the given thread read ]
+
+# Messages
+
+GET /v1/message/{id}
+[ Returns an individual message ]
+[ Should this return some context pointers, or should those be asked for separately?  I guess I need to decide exactly what context I want. Maybe save this for v2. ]
+
+POST /v1/message/{id}/archive
+POST /v1/message/{id}/read
+
+# People
+
+GET /v1/person/{id}
+[ Returns an individual person's information. ]
+
+# Groups
+
+GET /v1/group
+[ Include in the header a list of all person ids making up the group, or a group id if you already have one]
+
+POST /v1/group/save
+
+GET /v1/group/{id}
+[ Same as above, but only works with a group id (if the group has been saved). ]
+
+# ToDos
+
+GET /v1/todos
+GET /v1/todo/{id}

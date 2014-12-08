@@ -9,6 +9,7 @@ messages_per_page = 25
 ### HELPER FUNCTIONS ###
 ########################
 
+
 # helper function to get information needed by the base.html template
 def get_default_context(request):
     unread_message_count = len(get_all_message_threads()) ## clearly need to fix this
@@ -16,6 +17,7 @@ def get_default_context(request):
     context = {'unread_message_count': unread_message_count,
                'unread_conversation_count': unread_conversation_count }
     return context
+
 
 def get_context_with(request, dict):
     context = get_default_context(request)

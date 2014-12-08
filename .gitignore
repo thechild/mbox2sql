@@ -1,7 +1,16 @@
 *.pyc
-manage.py
 *.sqlite3
 msgs/mbox
 db.sqlite3.old
 files/
 msgs/mbox2
+pw
+pws
+uns
+urls
+gmail_test.py
+gmail/
+
+.idea/
+
+*.sublime-*

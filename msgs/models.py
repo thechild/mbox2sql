@@ -33,13 +33,14 @@ class Address(models.Model):
         else:
             return ''
 
+
     # returns sent messages and received messages, including ccs
     def all_messages(self): # can probably make the db do this...
         msgs = sorted(
-            chain(self.sent_messages.all(),
-                self.received_messages.all(),
-                self.cc_messages.all()),
-            key=attrgetter('sent_date'))
+                      chain(self.sent_messages.all(),
+                            self.received_messages.all(),
+                            self.cc_messages.all()),
+                      key=attrgetter('sent_date'))
         return msgs
 
     def sent_attachments(self):
@@ -53,15 +54,17 @@ class Conversation(models.Model):
     members = models.ManyToManyField(Address, related_name='conversations')
     subject = models.TextField()
     message_id = models.CharField(max_length=200)
-    latest_message_date = models.DateTimeField(default = datetime(1980, 1, 1))
+    thread_id = models.CharField(max_length=200, unique=True, null=True)
+    latest_message_date = models.DateTimeField(default=datetime(1980, 1, 1))
 
     def add_message(self, message):
-        self.messages.add(message)
-        if message.sent_date > self.latest_message_date:
-            self.latest_message_date = message.sent_date
-            self.save()
-        for person in message.all_related_people():
-            self.members.add(person)
+        if message not in self.messages.all():
+            self.messages.add(message)
+            if message.sent_date > self.latest_message_date:
+                self.latest_message_date = message.sent_date
+                self.save()
+            for person in message.all_related_people():
+                self.members.add(person)
 
     def trimmed_members(self):
         return self.members.exclude(get_current_user())
@@ -78,11 +81,15 @@ class Conversation(models.Model):
     def attachments_count(self):
         return self.attachments().count()
 
-    def attachments(self): # currently orders by oldest first
-        return Attachment.objects.filter(message__conversation = self).exclude(mime_related=True).order_by('message__sent_date')
+    def attachments(self):  # currently orders by oldest first
+        a = Attachment.objects.filter(message__conversation=self)
+        a = a.exclude(mime_related=True)
+        a = a.order_by('message__sent_date')
+        return a
 
     def __unicode__(self):
         return "[%s] - %d messages, %d participants" % (self.subject, self.messages.count(), self.members.count())
+
 
 class Message(models.Model):
     sender = models.ForeignKey(Address, related_name='sent_messages')
@@ -132,6 +139,7 @@ class Message(models.Model):
     def __unicode__(self):
         return "[%s] <%s> Subject: %s From: %s To: %s" % (self.id, self.message_id, self.subject, self.sender, self.recipients.all())
 
+
 class Header(models.Model):
     message = models.ForeignKey(Message, related_name="headers")
     field = models.CharField(max_length=200)
@@ -139,6 +147,7 @@ class Header(models.Model):
 
     def __unicode__(self):
         return "%s: %s" % (self.field, self.text)
+
 
 class Attachment(models.Model):
     filename = models.CharField(max_length=200)
@@ -153,13 +162,17 @@ class Attachment(models.Model):
 
     # should probably override delete and actually delete the file too
 
+
 def get_current_user():
     # obviously a hack
-    return Address.objects.get(address='cchild@redpoint.com')
+    # return Address.objects.get(address='cchild@redpoint.com')
+    return Address.objects.get(address='thechild@gmail.com')
+
 
 def get_sorted_conversations():
     conversations = Conversation.objects.filter(members=get_current_user()).order_by('-latest_message_date')
     return conversations
+
 
 def get_all_message_threads():
     messages = Message.objects.filter(recipients=get_current_user()).filter(parent__isnull=True).order_by('-sent_date')
