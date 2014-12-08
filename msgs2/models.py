@@ -1,8 +1,7 @@
 from django.db import models
-from collections import OrderedDict
 import datetime
 
-files_dir = 'files'
+files_dir = 'files' #this should be a variable somewhere...
 
 
 class Person(models.Model):
@@ -12,6 +11,11 @@ class Person(models.Model):
         addresses = ', '.join(str.format("<%s>", x.email) for x in self.addresses.all())
         return "<Person %s [%s]>" % (self.name, addresses)
 
+    def as_json(self):
+        return {'name': self.name,
+                'person_id': self.id,
+                'addresses': [a.as_json(include_name=False) for a in self.addresses.all()]}
+
 
 class Address(models.Model):
     email = models.EmailField()
@@ -20,6 +24,13 @@ class Address(models.Model):
 
     def __unicode__(self):
         return "{}".format(self.email)
+
+    def as_json(self, include_name=True):
+        r = {'email': self.email,
+             'address_id': self.id}
+        if include_name:
+            r['name'] = self.person.name
+        return r
 
 
 class Account(models.Model):
@@ -55,6 +66,7 @@ class Message(models.Model):
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
     account = models.ForeignKey(Account, related_name='messages', null=True)
+    # need to add support for a snippet, probably dynamic
 
     @property
     def is_unread(self):
@@ -66,7 +78,7 @@ class Message(models.Model):
 
     @property
     def is_starred(self):
-        return self.flags.exists(flag=MessageFlag.STARRED_FLAG)
+        return self.flags.filter(flag=MessageFlag.STARRED_FLAG).exists()
 
     def archive(self):
         self.flags.filter(flag=MessageFlag.INBOX_FLAG).delete()
@@ -78,6 +90,21 @@ class Message(models.Model):
 
     def __unicode__(self):
         return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
+
+    def as_json(self, include_bodies=False):
+        m = {}
+        m['message_id'] = self.id
+        m['thread_id'] = self.thread_id
+        m['sender'] = self.sender.as_json()
+        m['recipients'] = [r.as_json() for r in self.recipients.all()]
+        m['subject'] = self.subject
+        m['sent_date'] = self.sent_date
+        m['unread'] = self.is_unread
+        m['starred'] = self.is_starred
+        if include_bodies:
+            m['body'] = [b.as_json() for b in self.body.all()]
+        m['attachments'] = 'not yet implemented'
+        return m
 
 
 class MessageFlag(models.Model):
@@ -116,6 +143,10 @@ class MessageBody(models.Model):
     def __unicode__(self):
         return "[{}]: {}".format(self.type, self.content)
 
+    def as_json(self):
+        return {'type': self.type,
+                'content': self.content}
+
 
 class Attachment(models.Model):
     filename = models.CharField(max_length=200)
@@ -150,35 +181,3 @@ def add_todo_from_message(message):
     todo.message = message
     todo.save()
     return todo
-
-
-# return all messages in the inbox
-def get_inbox():
-    return Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
-
-
-# get all messages from senders that I've replied to before
-def get_incoming_inbox():
-    inbox = get_inbox()
-    return [m for m in inbox if is_sender_legit(m.sender.email)]
-
-
-# gets all messages in inbox but not in get_incoming_inbox()
-def get_other_inbox():
-    inbox = get_inbox()
-    return [m for m in inbox if not is_sender_legit(m.sender.email)]
-
-
-# return a list of unique threads from a list of messages.
-# can be called on get_inbox(), get_incoming_inbox(), get_other_inbox(), or any list of Message objects
-def get_threads_from_messages(messages):
-    thread_ids = list(OrderedDict.fromkeys([m.thread_id for m in messages]))
-    return [Message.objects.filter(thread_id=tid) for tid in thread_ids]
-
-
-def get_thread_for_message(message):
-    return Message.objects.filter(thread_id=message.thread_id)
-
-
-def is_sender_legit(email):
-    return Message.objects.filter(sender__email='thechild@gmail.com', members__addresses__email=email).exists()
