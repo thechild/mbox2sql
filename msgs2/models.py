@@ -11,6 +11,11 @@ class Person(models.Model):
         addresses = ', '.join(str.format("<%s>", x.email) for x in self.addresses.all())
         return "<Person %s [%s]>" % (self.name, addresses)
 
+    def as_json(self):
+        return {'name': self.name,
+                'person_id': self.id,
+                'addresses': [a.as_json(include_name=False) for a in self.addresses.all()]}
+
 
 class Address(models.Model):
     email = models.EmailField()
@@ -20,10 +25,12 @@ class Address(models.Model):
     def __unicode__(self):
         return "{}".format(self.email)
 
-    def as_json(self):
-        return {'name': self.person.name,
-                'email': self.email,
-                'address_id': self.id}
+    def as_json(self, include_name=True):
+        r = {'email': self.email,
+             'address_id': self.id}
+        if include_name:
+            r['name'] = self.person.name
+        return r
 
 
 class Account(models.Model):
