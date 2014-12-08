@@ -1,8 +1,7 @@
 from django.db import models
-from collections import OrderedDict
 import datetime
 
-files_dir = 'files'
+files_dir = 'files' #this should be a variable somewhere...
 
 
 class Person(models.Model):
@@ -173,35 +172,3 @@ def add_todo_from_message(message):
     todo.message = message
     todo.save()
     return todo
-
-
-# return all messages in the inbox
-def get_inbox():
-    return Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG)
-
-
-# get all messages from senders that I've replied to before
-def get_incoming_inbox():
-    inbox = get_inbox()
-    return [m for m in inbox if is_sender_legit(m.sender.email)]
-
-
-# gets all messages in inbox but not in get_incoming_inbox()
-def get_other_inbox():
-    inbox = get_inbox()
-    return [m for m in inbox if not is_sender_legit(m.sender.email)]
-
-
-# return a list of unique threads from a list of messages.
-# can be called on get_inbox(), get_incoming_inbox(), get_other_inbox(), or any list of Message objects
-def get_threads_from_messages(messages):
-    thread_ids = list(OrderedDict.fromkeys([m.thread_id for m in messages]))
-    return [Message.objects.filter(thread_id=tid) for tid in thread_ids]
-
-
-def get_thread_for_message(message):
-    return Message.objects.filter(thread_id=message.thread_id)
-
-
-def is_sender_legit(email):
-    return Message.objects.filter(sender__email='thechild@gmail.com', members__addresses__email=email).exists()
