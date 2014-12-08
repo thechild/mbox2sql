@@ -7,6 +7,20 @@ from django.core.urlresolvers import reverse
 
 # JSON API VIEWS
 
+def all_inboxen(request):
+	key_to_json = {'primary': 'primary',
+				   'new_sender': 'new',
+				   'repeat_sender': 'mass'}
+
+	inboxen = inbox.parse_inbox()
+	json_inboxen = {}
+	for key, value in inboxen.iteritems():
+		vib = inbox_as_json(value, request.GET.get('bodies'))
+		json_inboxen[key_to_json[key]] = {'count': len(vib), 'messages': vib}
+	r = {'status': 'Success',
+		 'inboxes': json_inboxen}
+	return get_json_response(r)
+
 def primary_inbox(request):
 	incoming_inbox = inbox.parse_inbox()['primary']
 	return inbox_as_json_response(incoming_inbox, request.GET.get('bodies'))
@@ -24,6 +38,7 @@ def get_message(request, message_id):
 		message = Message.objects.get(id=message_id)
 	except Message.DoesNotExist:
 		return error_as_json_response('No message with the requested ID exists.')
+
 	r = {'status': 'Success',
  		 'message_id': message.id,
 		 'message': message.as_json() }

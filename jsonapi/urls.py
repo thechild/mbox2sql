@@ -2,6 +2,7 @@ from django.conf.urls import patterns, url
 from jsonapi import views
 
 urlpatterns = patterns('',
+    url(r'^inbox/$', views.all_inboxen, name='full_inbox'),
     url(r'^inbox/primary/$', views.primary_inbox, name='primary_inbox'),
     url(r'^inbox/mass/$', views.mass_inbox, name='mass_inbox'),
     url(r'^inbox/new/$', views.new_inbox, name='new_inbox'),
