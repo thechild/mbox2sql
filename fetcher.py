@@ -13,8 +13,6 @@ import msgs2.importing as importing
 ### For all accounts, call sync_inbox_state to correctly set the inbox flags.  Note this is currently just one-way
 ### Sync - inbox flags propagage from server to db, but not the other way around.
 
-### TODO should combine load_all_messages and load_new_messages (or at least the logic for error handling etc)
-
 
 class Fetcher():
     _gmail = None
