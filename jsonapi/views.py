@@ -40,14 +40,18 @@ def error_as_json_response(error_message):
 	return get_json_response(r, status=404)
 
 def inbox_as_json_response(inbox, include_message_bodies=True):
-	json_inbox = [m.as_json(include_message_bodies) for m in inbox]
-	for m in json_inbox:
-		m['href'] = reverse('jsonapi:message', args=(m['message_id'], ))
+	json_inbox = inbox_as_json(inbox, include_message_bodies)
 	r = {'status': 'Success',
 		 'count': len(json_inbox),
 		 'inbox': json_inbox}
 	return get_json_response(r)
 	
+def inbox_as_json(inbox, include_message_bodies=True):
+	json_inbox = [m.as_json(include_message_bodies) for m in inbox]
+	for m in json_inbox:
+		m['href'] = reverse('jsonapi:message', args=(m['message_id'], ))
+	return json_inbox
+
 def get_json_response(r_json, status=200):
 	return HttpResponse(json.dumps(r_json, default=date_handler),
 						content_type='application/json',
