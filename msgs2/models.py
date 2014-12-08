@@ -21,6 +21,10 @@ class Address(models.Model):
     def __unicode__(self):
         return "{}".format(self.email)
 
+    def as_json(self):
+        return {'name': self.person.name,
+                'email': self.email}
+
 
 class Account(models.Model):
     TYPE_EXCHANGE = 'E'
@@ -79,6 +83,20 @@ class Message(models.Model):
     def __unicode__(self):
         return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
 
+    def as_json(self):
+        m = {}
+        m['message_id'] = self.id
+        m['thread_id'] = self.thread_id
+        m['sender'] = self.sender.as_json()
+        m['recipients'] = [r.as_json() for r in self.recipients.all()]
+        m['subject'] = self.subject
+        m['sent_date'] = self.sent_date
+        m['unread'] = self.is_unread
+        m['starred'] = self.is_starred
+        m['body'] = [b.as_json() for b in self.body.all()]
+        m['attachments'] = 'not yet implemented'
+        return m
+
 
 class MessageFlag(models.Model):
     UNREAD_FLAG = 'U'
@@ -115,6 +133,10 @@ class MessageBody(models.Model):
 
     def __unicode__(self):
         return "[{}]: {}".format(self.type, self.content)
+
+    def as_json(self):
+        return {'type': self.type,
+                'content': self.content}
 
 
 class Attachment(models.Model):
