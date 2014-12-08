@@ -3,7 +3,7 @@ import json
 from django.http import HttpResponse
 
 
-# Create your views here.
+# JSON API VIEWS
 
 def primary_inbox(request):
 	incoming_inbox = parse_inbox()['primary']
@@ -17,14 +17,13 @@ def new_inbox(request):
 	new_inbox = parse_inbox()['new_sender']
 	return inbox_as_json_response(new_inbox)
 
+### Helper functions ###
+
 def inbox_as_json_response(inbox):
 	json_inbox = [m.as_json() for m in inbox]
 	r = {'Status': 'Success',
 		 'Inbox': json_inbox}
 	return HttpResponse(json.dumps(r, default=date_handler), mimetype='application/json')
-
-
-### Helper functions ###
 
 def date_handler(obj):
 	return obj.isoformat() if hasattr(obj, 'isoformat') else obj
@@ -51,6 +50,7 @@ def is_repeat_sender(email, account=None):
 	return Address.objects.get(email=email).sent_messages.count() > 1
 
 
+# gets the inbox and splits it - should make this all DB calls if possible
 def parse_inbox(account=None):
 	inbox = get_inbox(account)
 
