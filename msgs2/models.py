@@ -83,7 +83,7 @@ class Message(models.Model):
     def __unicode__(self):
         return "Message <Sender: {}, Subject: {}>".format(self.sender.email, self.subject)
 
-    def as_json(self):
+    def as_json(self, include_bodies=False):
         m = {}
         m['message_id'] = self.id
         m['thread_id'] = self.thread_id
@@ -93,7 +93,8 @@ class Message(models.Model):
         m['sent_date'] = self.sent_date
         m['unread'] = self.is_unread
         m['starred'] = self.is_starred
-        m['body'] = [b.as_json() for b in self.body.all()]
+        if include_bodies:
+            m['body'] = [b.as_json() for b in self.body.all()]
         m['attachments'] = 'not yet implemented'
         return m
 
