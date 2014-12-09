@@ -118,16 +118,15 @@ def import_message(gmail_message, account, save_attachments=True):
         # maybe update read status, or inbox status if I can figure out how to do that?
         return None
 
-    new_message = Message(subject=gmail_message.subject,
+    new_message = create_message(subject=gmail_message.subject,
                           sent_date=gmail_message.sent_at,
                           message_id=gmail_message.message_id,
                           thread_id=gmail_message.thread_id,
-                          account=account)
+                          account=account,
+                          sender_tuple=gmail_message.fr)
     # new_message.save()
     # add the senders
-    new_message.sender = get_or_create_person(gmail_message.fr)
     new_message.save()
-    new_message.members.add(new_message.sender.person)
     for person in gmail_message.to + gmail_message.cc:
         p = get_or_create_person(person)
         new_message.recipients.add(p)

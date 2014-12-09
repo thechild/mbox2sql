@@ -26,10 +26,7 @@ class ExchangeFetcher():
 		self.processed_inbox = [self.exchange.process_items(m) for m in self.raw_inbox]
 		print "Loaded exchange mailbox, found {} messages".format(len(self.processed_inbox))
 
-		inbox_messages = []
-
-		for message in self.processed_inbox:
-			inbox_messages.append(self.load_item(message, inbox=True))
+		inbox_messages = [self.load_item(message, inbox=True) for message in self.processed_inbox]
 
 		print "syncing {} inbox flags".format(len(inbox_messages))
 		importing.sync_flags(self.account, inbox_messages, MessageFlag.INBOX_FLAG)
@@ -143,19 +140,16 @@ class ExchangeFetcher():
 				return existing_messages[0]
 			# maybe use this for attachments? or pull them from exchange somehow?
 			e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
-			
+
 			# this is currently saving everything in UTC (Z) time, not sure what I'm doing with Gmail
-			m = Message(subject=message['t:Subject'] or u'',
+			m = importing.create_message(subject=message['t:Subject'] or u'',
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
 						message_id=message['t:ItemId'],
 						thread_id=message['t:ConversationIndex'],
-						account = self.account
-						)
-			m.sender = importing.get_or_create_person((
-				message['t:From']['t:Mailbox']['t:Name'],
-				message['t:From']['t:Mailbox']['t:EmailAddress']))
+						account = self.account,
+						sender_tuple=((message['t:From']['t:Mailbox']['t:Name'],
+									   message['t:From']['t:Mailbox']['t:EmailAddress'])))
 			m.save()
-			m.members.add(m.sender.person)
 
 			def parse_recipients(recipients, msg):
 				def import_person(person):
