@@ -1,5 +1,6 @@
 from django.db.models import Count
-from msgs2.models import Address
+from msgs2.models import Address, Thread, Message
+from msgs2.importing import get_or_create_thread
 
 
 def cleanup_addresses():
@@ -21,3 +22,20 @@ def cleanup_addresses():
 				
 			false_address.person.delete()
 			false_address.delete()
+
+def cleanup_threads():
+	messages = Message.objects.all()
+	not_updated = 0
+	updated = 0
+	new_threads = 0
+	for m in messages:
+		try:
+			t = m.thread
+			not_updated += 1
+		except (Thread.DoesNotExist, ValueError):
+			(new, m.thread) = get_or_create_thread(m.account, m.thread_id, True)
+			m.save()
+			updated += 1
+			if new:
+				new_threads += 1
+	print "Sorted %s messages into %s new threads.  Ignored %s messages already in threads." % (updated, new_threads, not_updated)
