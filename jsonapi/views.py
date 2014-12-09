@@ -1,5 +1,5 @@
 from msgs2 import inbox
-from msgs2.models import Message, Address
+from msgs2.models import Message, Address, Thread
 import json
 from django.http import HttpResponse
 from django.core.urlresolvers import reverse
@@ -12,7 +12,7 @@ def all_inboxen(request):
 				   'new_sender': 'new',
 				   'repeat_sender': 'mass'}
 
-	inboxen = inbox.parse_inbox()
+	inboxen = inbox.parse_inbox_threads()
 	json_inboxen = {}
 	for key, value in inboxen.iteritems():
 		vib = inbox_as_json(value, request.GET.get('bodies'))
@@ -23,17 +23,17 @@ def all_inboxen(request):
 
 
 def primary_inbox(request):
-	incoming_inbox = inbox.parse_inbox()['primary']
+	incoming_inbox = inbox.parse_inbox_threads()['primary']
 	return inbox_as_json_response(incoming_inbox, request.GET.get('bodies'))
 
 
 def mass_inbox(request):
-	mass_inbox = inbox.parse_inbox()['repeat_sender']
+	mass_inbox = inbox.parse_inbox_threads()['repeat_sender']
 	return inbox_as_json_response(mass_inbox, request.GET.get('bodies'))
 
 
 def new_inbox(request):
-	new_inbox = inbox.parse_inbox()['new_sender']
+	new_inbox = inbox.parse_inbox_threads()['new_sender']
 	return inbox_as_json_response(new_inbox, request.GET.get('bodies'))
 
 
@@ -47,6 +47,16 @@ def get_message(request, message_id):
  		 'message_id': message.id,
 		 'message': message.as_json() }
 	return get_json_response(r)
+
+def get_thread(request, thread_id):
+	try:
+		thread = Thread.objects.get(id=thread_id)
+	except Thread.DoesNotExist:
+		return error_as_json_response('No thread with the requested ID exists.')
+
+	return get_json_response({'status': 'Success',
+		'thread_id': thread.id,
+		'thread': thread.as_json() })
 
 
 def get_person_from_address(request, address_id):
@@ -83,7 +93,7 @@ def inbox_as_json_response(inbox, include_message_bodies=True):
 def inbox_as_json(inbox, include_message_bodies=True):
 	json_inbox = [m.as_json(include_message_bodies) for m in inbox]
 	for m in json_inbox:
-		m['href'] = reverse('jsonapi:message', args=(m['message_id'], ))
+		m['href'] = reverse('jsonapi:thread', args=(m['thread_id'], ))
 	return json_inbox
 
 def get_json_response(r_json, status=200):

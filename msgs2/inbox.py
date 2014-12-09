@@ -1,7 +1,14 @@
-from models import Message, Address, Account, MessageFlag
+from models import Message, Address, Account, MessageFlag, Thread
 
 def get_inbox(account=None):
 	full_inbox = Message.objects.filter(flags__flag=MessageFlag.INBOX_FLAG).order_by('-sent_date')
+	if account:
+		return full_inbox.filter(account=account)
+	else:
+		return full_inbox
+
+def get_inbox_threads(account=None):
+	full_inbox = Thread.objects.filter(messages__flags__flag=MessageFlag.INBOX_FLAG).order_by('-messages__sent_date')
 	if account:
 		return full_inbox.filter(account=account)
 	else:
@@ -20,6 +27,30 @@ def is_sender_legit(email, account=None):
 
 def is_repeat_sender(email, account=None):
 	return Address.objects.get(email=email).sent_messages.count() > 1
+
+def parse_inbox_threads(account=None):
+	inbox = get_inbox_threads(account)
+
+	primary_inbox = []
+	new_sender_inbox = []
+	repeat_sender_inbox = []
+
+	for thr in inbox:
+		# if there are multiple messages in the thread, treat it as legit
+		if thr.messages.count() > 1:
+			primary_inbox.append(thr)
+		else:
+			orig_sender = thr.messages.all()[0].sender.email
+			if is_sender_legit(orig_sender):
+				primary_inbox.append(thr)
+			elif is_repeat_sender(orig_sender):
+				repeat_sender_inbox.append(thr)
+			else:
+				new_sender_inbox.append(thr)
+
+	return {'primary': primary_inbox,
+			'new_sender': new_sender_inbox,
+			'repeat_sender': repeat_sender_inbox}
 
 
 # gets the inbox and splits it - should make this all DB calls if possible

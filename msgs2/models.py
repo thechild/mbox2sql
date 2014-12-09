@@ -9,10 +9,26 @@ class Thread(models.Model):
 
     @property
     def subject(self):
-        return self.messages.all().order_by('-sent_date')[0].subject #grab the subject of the oldest message
+        return self.messages.all().order_by('sent_date')[0].subject #grab the subject of the oldest message
+
+    @property
+    def members(self):
+        s = set()
+        for m in self.messages.all():
+            s.update(m.members.all())
+        return list(s)
 
     def __unicode__(self):
         return "Thread <{}>, Subject <{}>, Messages <{}>".format(self.thread_id, self.subject, self.messages.all().count())
+
+
+    def as_json(self, include_bodies=False):
+        return {'thread_id': self.id,
+                'internet_thread_id': self.thread_id,
+                'subject': self.subject,
+                'members': [member.as_json() for member in self.members],
+                'messages': [message.as_json() for message in self.messages.all()]}
+
 
 class Person(models.Model):
     name = models.CharField(max_length=200)
