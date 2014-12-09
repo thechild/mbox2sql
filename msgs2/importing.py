@@ -1,7 +1,7 @@
 import os
 import hashlib
 import uuid
-from models import Message, Address, Person, MessageBody, MessageFlag, Header, Attachment
+from models import Message, Address, Person, MessageBody, MessageFlag, Header, Attachment, Thread
 from models import files_dir
 from django.utils.text import get_valid_filename
 from email.Header import decode_header
@@ -51,13 +51,30 @@ def get_or_create_person(address_tuple):
         return existing_address
 
 
-def create_message(email_message):
-    if email_message:
-        message = Message()
-        message.subject = email_message.subject
-        message.sent_date = email_message.sent_date
-        message.message_id = email_message.message_id
-        message.thread_id = email_message.thread_id  # where should this logic live?
+def create_message(subject, sent_date, message_id, thread_id, account, sender_tuple):
+    try:
+        message = Message.objects.get(account=account, message_id=message_id)
+    except Message.DoesNotExist:
+        message = Message(subject=subject, sent_date=sent_date, message_id=message_id, thread_id=thread_id, account=account)
+        message.sender = get_or_create_person(sender_tuple)
+        message.thread = get_or_create_thread(account, thread_id)
+        message.save()
+        message.members.add(message.sender.person)
+    return message
+        
+
+def get_or_create_thread(account, thread_id, incl_new=False):
+    try:
+        new_thread = Thread.objects.filter(account=account).get(thread_id=thread_id)
+        new = True
+    except Thread.DoesNotExist:
+        new_thread = Thread(account=account, thread_id=thread_id)
+        new_thread.save()
+        new = False
+    if incl_new:
+        return (new, new_thread)
+    else:
+        return new_thread
 
 
 # saves content as a file and creates an Attachment connected to message
