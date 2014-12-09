@@ -3,6 +3,16 @@ import datetime
 
 files_dir = 'files' #this should be a variable somewhere...
 
+class Thread(models.Model):
+    account = models.ForeignKey('Account', related_name='threads')
+    thread_id = models.CharField(max_length=200)
+
+    @property
+    def subject(self):
+        return self.messages.all().order_by('-sent_date')[0].subject #grab the subject of the oldest message
+
+    def __unicode__(self):
+        return "Thread <{}>, Subject <{}>, Messages <{}>".format(self.thread_id, self.subject, self.messages.all().count())
 
 class Person(models.Model):
     name = models.CharField(max_length=200)
@@ -65,6 +75,7 @@ class Message(models.Model):
     sent_date = models.DateTimeField()
     message_id = models.CharField(max_length=200)
     thread_id = models.CharField(max_length=200)
+    thread = models.ForeignKey(Thread, related_name='messages', null=True)
     account = models.ForeignKey(Account, related_name='messages', null=True)
     # need to add support for a snippet, probably dynamic
 
