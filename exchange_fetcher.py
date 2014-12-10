@@ -20,13 +20,18 @@ class ExchangeFetcher():
 			self.account = accs[0]
 
 	def load_inbox(self):
-		print "Getting inbox..."
-		self.raw_inbox = self.exchange.get_inbox()
-		print "Processing inbox..."
-		self.processed_inbox = [self.exchange.process_items(m) for m in self.raw_inbox]
-		print "Loaded exchange mailbox, found {} messages".format(len(self.processed_inbox))
+		inbox = self.exchange.get_inbox()
+		inbox_messages = []
+		pulled_messages = 0
+		for message in inbox:
+			m, new = self.load_item(message, inbox=True)
+			if new:
+				pulled_messages += 1
+			inbox_messages.append(m)
 
-		inbox_messages = [self.load_item(message, inbox=True) for message in self.processed_inbox]
+		#inbox_messages = [self.load_item(message, inbox=True) for message in inbox]
+
+		print "Loaded {} new messages from server.".format(pulled_messages)
 
 		print "syncing {} inbox flags".format(len(inbox_messages))
 		importing.sync_flags(self.account, inbox_messages, MessageFlag.INBOX_FLAG)
@@ -36,13 +41,13 @@ class ExchangeFetcher():
 
 		# make sure the right number of messages are in the inbox
 		db_inbox_messages = MessageFlag.objects.filter(message__account=self.account).filter(flag=MessageFlag.INBOX_FLAG)
-		if len(db_inbox_messages) != len(self.processed_inbox):
-			print "ERROR - Incorrect number of messages in exchange inbox!!"
+		print "There are {} db messages in the inbox.".format(len(db_inbox_messages))
+		# need some way to check this
 
 	def load_archive(self):
 		archive = self.exchange.get_archive()
 		for message in archive:
-			self.load_item(message.processed_message(), inbox=False)
+			self.load_item(message, inbox=False)
 
 	def walk_message(self, mime_message, db_message):
 		def parse_attachment(message_part):
@@ -81,6 +86,7 @@ class ExchangeFetcher():
 						fp.write(file_data)
 					a.message = db_message
 					a.save()
+					return a
 
 		def decode_part(part):
 			return unicode(
@@ -111,7 +117,7 @@ class ExchangeFetcher():
 									content=html)
 			body_html.save()
 
-	def load_item(self, item, inbox=False):
+	def load_item(self, raw_item, inbox=False):
 		def set_flags(message, db_message):
 			db_message_unread_flag = db_message.flags.filter(flag=MessageFlag.UNREAD_FLAG)
 			if message['t:IsRead'] == u'true':
@@ -125,20 +131,24 @@ class ExchangeFetcher():
 				if not db_message.flags.filter(flag=MessageFlag.INBOX_FLAG).exists():
 					db_message.flags.add(MessageFlag(flag=MessageFlag.INBOX_FLAG))
 
-			db_message.save()
+			db_message.save()			
 
-		if item[0]['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
-			message = item[0]['m:GetItemResponseMessage']['m:Items']['t:Message']
+		existing_messages = Message.objects.filter(account=self.account, message_id=raw_item.item_id)
+		if existing_messages.exists():
+			# should probably set flags, but not going to to avoid network hit
+			return (existing_messages[0], False)
+
+		# now pull from the network
+		item = raw_item.processed_message()
+
+		if item['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
+			message = item['m:GetItemResponseMessage']['m:Items']['t:Message']
 			
-			existing_messages = Message.objects.filter(message_id=message['t:ItemId'])
-			if existing_messages.count() > 0:
-				# print "message already in db - count %s" % existing_messages.count()
-				set_flags(message, existing_messages[0])
-				return existing_messages[0]
 			# maybe use this for attachments? or pull them from exchange somehow?
 			e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
 
 			# this is currently saving everything in UTC (Z) time, not sure what I'm doing with Gmail
+			
 			m = importing.create_message(subject=message['t:Subject'] or u'',
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
 						message_id=message['t:ItemId']['@Id'],
@@ -178,7 +188,7 @@ class ExchangeFetcher():
 			set_flags(message, m)
 
 			m.save()
-			return m
+			return (m, True)
 		else:
 			print "One message failed to load: {}".format(item[0])
-			return None
+			return (None, True)
