@@ -13,6 +13,7 @@ class MessageItem():
         self._folder_id = folder_id
         self._item_id = item_id
         self._mail = mail
+        self._message = None
 
     @property
     def folder_id(self):
@@ -65,11 +66,12 @@ class ExchangeMail():
         else:
             folder = T.DistinguishedFolderId(Id=d_folder_id)
 
-        root = M.FindItem({u'Traversal': u'Shallow'},
-                M.ItemShape(T.BaseShape(format)),
-                M.IndexedPageItemView({u'MaxEntriesReturned': unicode(max_entries), u'BasePoint': u'Beginning', u'Offset': unicode(offset)}),
-                folder,
-                )
+        root = M.FindItem(
+            {u'Traversal': u'Shallow'},
+            M.ItemShape(T.BaseShape(format)),
+            M.IndexedPageItemView({u'MaxEntriesReturned': unicode(max_entries), u'BasePoint': u'Beginning', u'Offset': unicode(offset)}),
+            M.ParentFolderIds(folder),
+            )
         return root
 
 
@@ -168,7 +170,7 @@ class ExchangeMail():
         return out_messages
 
         
-    def get_folder_generator(self, folder_name, distinguished_folder=True, step=50):
+    def get_folder_generator(self, folder_name, distinguished_folder=True, step=10):
         if distinguished_folder:
             pass
         else:
