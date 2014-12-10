@@ -23,18 +23,19 @@ class MessageItem():
 
     @property
     def item_id(self):
-        return self._item_id
+        return unicode(self._item_id)
 
     def message(self):
         if not self._message:
             root = exml.get_item_nck(self._item_id, format=u"AllProperties")
+            print "Fetching message for message {}.".format(self.item_id)
             self._message = self._mail.service.send(root)
         return self._message
 
     def processed_message(self):
         msg = self.message().xpath(u'//m:ResponseMessages/m:GetItemResponseMessage', namespaces=NAMESPACES)[0]
         if msg.get('ResponseClass') == 'Success':
-            return [xmltodict.parse(etree.tostring(msg))]
+            return xmltodict.parse(etree.tostring(msg))
 
 
 class ExchangeMail():
@@ -80,7 +81,7 @@ class ExchangeMail():
                 if folder.xpath('t:DisplayName', namespaces=NAMESPACES)[0].text == folder_name:
                     print "Found Folder: {} ({})".format(folder_name, folder.xpath('t:FolderId', namespaces=NAMESPACES)[0].get('Id'))
                     #ipdb.set_trace()
-                    pxml(folder.xpath('t:TotalCount', namespaces=NAMESPACES)[0])
+                    #pxml(folder.xpath('t:TotalCount', namespaces=NAMESPACES)[0])
                     return (folder.xpath('t:FolderId', namespaces=NAMESPACES)[0].get('Id'),
                             folder.xpath('t:TotalCount', namespaces=NAMESPACES)[0].text)
                 # does it have child folders?
@@ -95,9 +96,10 @@ class ExchangeMail():
         
     def get_folder_generator(self, folder_name, distinguished_folder=True, step=10):
         if distinguished_folder:
-            folder = self.get_distinguished_folder(u"inbox")
+            folder = self.get_distinguished_folder(folder_name)
             folder_id = folder.xpath('//t:FolderId', namespaces=NAMESPACES)[0].get('Id')
-            item_count = folder.xpath('//t:ChildFolderCount', namespaces=NAMESPACES)[0].text
+            item_count = folder.xpath('//t:TotalCount', namespaces=NAMESPACES)[0].text
+            print "There should be {} items in the {} folder.".format(item_count, folder_name)
         else:
             folder = self.find_folder_named(folder_name)
             if not folder:
