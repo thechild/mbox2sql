@@ -92,18 +92,6 @@ class ExchangeMail():
         
         # then iterate through each folder recursively until you find the right name
         return search_children(rootfolder_id, ptree=ptree) 
-
-    # should be in soap_request
-    # I might be able to do this with multiple itemids, which would speed things up
-
-    def process_items(self, msgxml):
-        msgs = msgxml.xpath(u'//m:ResponseMessages/m:GetItemResponseMessage', namespaces=NAMESPACES)
-        out_messages = []
-        for msg in msgs:
-            if msg.get('ResponseClass') == 'Success':
-                out_messages.append(xmltodict.parse(etree.tostring(msg)))
-        return out_messages
-
         
     def get_folder_generator(self, folder_name, distinguished_folder=True, step=10):
         if distinguished_folder:
@@ -126,30 +114,8 @@ class ExchangeMail():
             for id in ids:
                 yield MessageItem(folder_id or folder_name, id.get('Id'), self)
 
-
-    def get_folder(self, folder_name, distinguished_folder=True):
-        if distinguished_folder:
-            body = exml.get_folder_items(d_folder_id=folder_name, format=u"IdOnly")
-        else:
-            folder_id, item_count = self.find_folder_named(folder_name)
-            body = exml.get_folder_items(folder_id=folder_id, format=u"IdOnly")
-        pxml(body)
-        # print "Sending request for folder..."
-        raw_messages = self.service.send(body)
-        items = raw_messages.xpath(u'//m:FindItemResponseMessage/m:RootFolder/t:Items/t:Message', namespaces=NAMESPACES)
-        ids = items[0].xpath('//t:ItemId', namespaces=NAMESPACES)
-        msgs = []
-        for id in ids:
-            tid = id.get('Id')
-            tidck = id.get('ChangeKey')
-            root = exml.get_item(tid, tidck, format=u"AllProperties")
-            # print "Sending request for message {}".format(tid)
-            msgxml = self.service.send(root)
-            msgs.append(msgxml)
-        return msgs
-
     def get_archive(self):
-        return self.get_folder(u"Archive", distinguished_folder=False)
+        return self.get_folder_generator(u"Archive", distinguished_folder=False)
 
     def get_inbox(self):
-        return self.get_folder(u"inbox")
+        return self.get_folder_generator(u"inbox")
