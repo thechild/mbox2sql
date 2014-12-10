@@ -106,7 +106,7 @@ class ExchangeMail():
                 raise Exception("Couldn't find folder named %s" % folder_name)
             folder_id, item_count = folder
 
-        for i in xrange(int(item_count) / step):
+        for i in xrange(int(item_count) / step + 1):
             # get the list of step items
             body = exml.get_folder_items_range(folder_id=folder_id, format=u"IdOnly",
                 max_entries=step, offset=i * step)
