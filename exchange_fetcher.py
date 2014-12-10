@@ -40,12 +40,9 @@ class ExchangeFetcher():
 			print "ERROR - Incorrect number of messages in exchange inbox!!"
 
 	def load_archive(self):
-		raw_archive = self.exchange.get_archive()
-		processed_inbox = [self.exchange.process_items(m) for m in raw_archive]
-		print "Loaded exchange mailbox, found {} messages".format(len(processed_inbox))
-		for message in processed_inbox:
-			self.load_item(message, inbox=False)
-
+		archive = self.exchange.get_archive()
+		for message in archive:
+			self.load_item(message.processed_message(), inbox=False)
 
 	def walk_message(self, mime_message, db_message):
 		def parse_attachment(message_part):
