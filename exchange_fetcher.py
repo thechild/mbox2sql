@@ -141,7 +141,7 @@ class ExchangeFetcher():
 			# this is currently saving everything in UTC (Z) time, not sure what I'm doing with Gmail
 			m = importing.create_message(subject=message['t:Subject'] or u'',
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
-						message_id=message['t:ItemId'],
+						message_id=message['t:ItemId']['@Id'],
 						thread_id=message.get('t:ConversationIndex'),
 						account = self.account,
 						sender_tuple=((message['t:From']['t:Mailbox']['t:Name'],
