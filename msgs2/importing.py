@@ -57,7 +57,8 @@ def create_message(subject, sent_date, message_id, thread_id, account, sender_tu
     except Message.DoesNotExist:
         message = Message(subject=subject, sent_date=sent_date, message_id=message_id, thread_id=thread_id, account=account)
         message.sender = get_or_create_person(sender_tuple)
-        message.thread = get_or_create_thread(account, thread_id)
+        if thread_id:
+            message.thread = get_or_create_thread(account, thread_id)
         message.save()
         message.members.add(message.sender.person)
     return message

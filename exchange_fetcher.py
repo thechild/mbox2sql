@@ -145,7 +145,7 @@ class ExchangeFetcher():
 			m = importing.create_message(subject=message['t:Subject'] or u'',
 						sent_date=datetime.strptime(message['t:DateTimeSent'], '%Y-%m-%dT%H:%M:%SZ'),
 						message_id=message['t:ItemId'],
-						thread_id=message['t:ConversationIndex'],
+						thread_id=message.get('t:ConversationIndex'),
 						account = self.account,
 						sender_tuple=((message['t:From']['t:Mailbox']['t:Name'],
 									   message['t:From']['t:Mailbox']['t:EmailAddress'])))
