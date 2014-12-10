@@ -4,10 +4,12 @@ from pyexchange.exchange2010.soap_request import M, T, NAMESPACES
 import pyexchange
 import xmltodict
 import ipdb
+import exchange_soap as exml
 
 def pxml(xml):
     print(etree.tostring(xml, pretty_print=True))
 
+# lazy pulling of message bodies
 class MessageItem():
     def __init__(self, folder_id, item_id, mail):
         self._folder_id = folder_id
@@ -29,7 +31,6 @@ class MessageItem():
             self._message = self._mail.service.send(root)
         return self._message
 
-
 class ExchangeMail():
     def __init__(self, url, username, password):
         self.url = url
@@ -43,48 +44,6 @@ class ExchangeMail():
         self.service = service
 
 
-    # should be in soap_request
-    def get_folder_items(self, format=u"Default", d_folder_id=u"inbox", folder_id=None):
-      if folder_id:
-        root =    root = M.FindItem(
-                    {u'Traversal': u'Shallow'},
-                    M.ItemShape(T.BaseShape(format)),
-                    M.IndexedPageItemView({u'MaxEntriesReturned': u'10', u'BasePoint': u'Beginning', u'Offset': u'0'}),
-                    M.ParentFolderIds(T.FolderId(Id=folder_id)),
-                    )
-      else:
-        root = M.FindItem(
-            {u'Traversal': u'Shallow'},
-            M.ItemShape(T.BaseShape(format)),
-            M.ParentFolderIds(T.DistinguishedFolderId(Id=d_folder_id)),
-            )
-      return root
-
-    def get_folder_items_range(self, format=u"Default", d_folder_id=u"inbox", folder_id=None, max_entries=None, offset=None):
-        if folder_id:
-            folder = T.FolderId(Id=folder_id)
-        else:
-            folder = T.DistinguishedFolderId(Id=d_folder_id)
-
-        root = M.FindItem(
-            {u'Traversal': u'Shallow'},
-            M.ItemShape(T.BaseShape(format)),
-            M.IndexedPageItemView({u'MaxEntriesReturned': unicode(max_entries), u'BasePoint': u'Beginning', u'Offset': unicode(offset)}),
-            M.ParentFolderIds(folder),
-            )
-        return root
-
-
-    def get_child_folders(self, folder_id, format=u"Default"):
-        root = M.FindFolder(
-            {u'Traversal': u'Shallow'},
-            M.FolderShape(
-                T.BaseShape(format)),
-            M.ParentFolderIds(
-                T.FolderId(Id=folder_id)))
-        return root
-
-
     def get_distinguished_folder_id(self, d_folder_id, format=u"Default"):
         root = M.GetFolder(
             M.FolderShape(T.BaseShape(format)),
@@ -96,14 +55,14 @@ class ExchangeMail():
             return None
         return resp.xpath('//t:FolderId', namespaces=NAMESPACES)[0].get('Id')
 
+
     def find_folder_named(self, folder_name, ptree=False):
         # first find the root folder
         rootfolder_id = self.get_distinguished_folder_id('root')
         print "Root folder: {}".format(rootfolder_id)
 
-
         def search_children(folder_id, depth=0, ptree=False):
-            child_folders = self.service.send(self.get_child_folders(folder_id))
+            child_folders = self.service.send(exml.get_child_folders(folder_id))
             #ipdb.set_trace()
             for folder in child_folders.xpath('//t:Folder', namespaces=NAMESPACES):
                 if ptree:
@@ -123,43 +82,10 @@ class ExchangeMail():
             return None
         
         # then iterate through each folder recursively until you find the right name
-        return search_children(rootfolder_id, ptree=ptree)
-
-    def get_folder_xml(self, folder, format=u"Default"):
-        root = M.GetFolder(
-            M.FolderShape(T.BaseShape(format)),
-            M.FolderIds(T.DistinguishedFolderId(Id=folder))
-            )
-        return root
-
-    def get_item_nck(self, id, format=u"Default"):
-        root = M.GetItem(
-            M.ItemShape(T.BaseShape(format),
-                        T.IncludeMimeContent("true")),
-            M.ItemIds(
-                T.ItemId({'Id': id})))
-        return root
- 
+        return search_children(rootfolder_id, ptree=ptree) 
 
     # should be in soap_request
     # I might be able to do this with multiple itemids, which would speed things up
-    def get_item(self, id, change_key, format=u"Default"):
-        root = M.GetItem(
-            M.ItemShape(T.BaseShape(format),
-                        T.IncludeMimeContent("true")),
-            M.ItemIds(
-                T.ItemId({'Id': id, 'ChangeKey': change_key})))
-        return root
-
-
-    def get_items(self, ids, format=u"Default"):
-        itemids = [T.ItemId({'Id': id, 'ChangeKey': change_key}) for id, change_key in ids]
-        root = M.GetItem(
-            M.ItemShape(T.BaseShape(format),
-                        T.IncludeMimeContent("true")),
-            *itemids)
-        return root
-
 
     def process_items(self, msgxml):
         msgs = msgxml.xpath(u'//m:ResponseMessages/m:GetItemResponseMessage', namespaces=NAMESPACES)
@@ -181,7 +107,7 @@ class ExchangeMail():
 
         for i in xrange(int(item_count) / step):
             # get the list of step items
-            body = self.get_folder_items_range(folder_id=folder_id, format=u"IdOnly",
+            body = exml.get_folder_items_range(folder_id=folder_id, format=u"IdOnly",
                 max_entries=step, offset=i * step)
             raw_messages = self.service.send(body)
             items = raw_messages.xpath(u'//m:FindItemResponseMessage/m:RootFolder/t:Items/t:Message', namespaces=NAMESPACES)
@@ -189,12 +115,13 @@ class ExchangeMail():
             for id in ids:
                 yield MessageItem(folder_id or folder_name, id.get('Id'), self)
 
+
     def get_folder(self, folder_name, distinguished_folder=True):
         if distinguished_folder:
-            body = self.get_folder_items(d_folder_id=folder_name, format=u"IdOnly")
+            body = exml.get_folder_items(d_folder_id=folder_name, format=u"IdOnly")
         else:
             folder_id, item_count = self.find_folder_named(folder_name)
-            body = self.get_folder_items(folder_id=folder_id, format=u"IdOnly")
+            body = exml.get_folder_items(folder_id=folder_id, format=u"IdOnly")
         pxml(body)
         # print "Sending request for folder..."
         raw_messages = self.service.send(body)
@@ -204,7 +131,7 @@ class ExchangeMail():
         for id in ids:
             tid = id.get('Id')
             tidck = id.get('ChangeKey')
-            root = self.get_item(tid, tidck, format=u"AllProperties")
+            root = exml.get_item(tid, tidck, format=u"AllProperties")
             # print "Sending request for message {}".format(tid)
             msgxml = self.service.send(root)
             msgs.append(msgxml)
