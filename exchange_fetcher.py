@@ -62,11 +62,11 @@ class ExchangeFetcher():
 					a.content_type = message_part.get_content_type()
 
 					for param in dispositions[1:]:
-						name, value = param.split("=")
+						name, value = param.split("=", 1)
 						name = name.lower()
 
 						if name == "filename":
-							a.filename = value
+							a.filename = value #need to parse utf8 stuff here.  should combine this with the gmail attachment handler
 
 					if not a.filename:
 						a.filename = str(uuid.uuid4())
