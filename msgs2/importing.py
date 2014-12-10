@@ -62,7 +62,9 @@ def create_message(subject, sent_date, message_id, thread_id, account, sender_tu
         message.save()
         message.members.add(message.sender.person)
     return message
-        
+
+def message_exists(server_message_id, account):
+    return Message.objects.filter(account=account, message_id=server_message_id).exists()
 
 def get_or_create_thread(account, thread_id, incl_new=False):
     try:
@@ -109,6 +111,7 @@ def handle_attachment(message, content, related=False):
         fp.write(file_content)
     a.message = message
     a.save()
+    return a
 
 
 def import_message(gmail_message, account, save_attachments=True):
