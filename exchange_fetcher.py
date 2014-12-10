@@ -7,6 +7,7 @@ import os
 from django.utils.text import get_valid_filename
 import hashlib
 from datetime import datetime
+import ipdb
 
 class ExchangeFetcher():
 	def __init__(self, url, username, password):
