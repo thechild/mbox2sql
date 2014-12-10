@@ -1,6 +1,6 @@
 from lxml import etree
 from pyexchange import Exchange2010Service, ExchangeNTLMAuthConnection
-from pyexchange.exchange2010.soap_request import M, T, NAMESPACES
+from pyexchange.exchange2010.soap_request import NAMESPACES
 import pyexchange
 import xmltodict
 import ipdb
@@ -27,9 +27,15 @@ class MessageItem():
 
     def message(self):
         if not self._message:
-            root = self._mail.get_item_nck(self._item_id)
+            root = exml.get_item_nck(self._item_id, format=u"AllProperties")
             self._message = self._mail.service.send(root)
         return self._message
+
+    def processed_message(self):
+        msg = self.message().xpath(u'//m:ResponseMessages/m:GetItemResponseMessage', namespaces=NAMESPACES)[0]
+        if msg.get('ResponseClass') == 'Success':
+            return [xmltodict.parse(etree.tostring(msg))]
+
 
 class ExchangeMail():
     def __init__(self, url, username, password):
@@ -44,16 +50,19 @@ class ExchangeMail():
         self.service = service
 
 
-    def get_distinguished_folder_id(self, d_folder_id, format=u"Default"):
-        root = M.GetFolder(
-            M.FolderShape(T.BaseShape(format)),
-            M.FolderIds(T.DistinguishedFolderId(Id=d_folder_id)))
+    def get_distinguished_folder(self, d_folder_id, format=u"Default"):
+        root = exml.get_folder_xml(d_folder_id)
         try:
             resp = self.service.send(root)
         except pyexchange.FailedExchangeException:
             print "Error with Exchange, perhaps there is no such folder as {}.".format(d_folder_id)
             return None
-        return resp.xpath('//t:FolderId', namespaces=NAMESPACES)[0].get('Id')
+        return resp
+
+
+    def get_distinguished_folder_id(self, d_folder_id, format=u"Default"):
+        folder = self.get_distinguished_folder(d_folder_id, format)
+        return folder.xpath('//t:FolderId', namespaces=NAMESPACES)[0].get('Id')
 
 
     def find_folder_named(self, folder_name, ptree=False):
@@ -70,7 +79,7 @@ class ExchangeMail():
                 # is it our folder?
                 if folder.xpath('t:DisplayName', namespaces=NAMESPACES)[0].text == folder_name:
                     print "Found Folder: {} ({})".format(folder_name, folder.xpath('t:FolderId', namespaces=NAMESPACES)[0].get('Id'))
-                    ipdb.set_trace()
+                    #ipdb.set_trace()
                     pxml(folder.xpath('t:TotalCount', namespaces=NAMESPACES)[0])
                     return (folder.xpath('t:FolderId', namespaces=NAMESPACES)[0].get('Id'),
                             folder.xpath('t:TotalCount', namespaces=NAMESPACES)[0].text)
@@ -98,7 +107,9 @@ class ExchangeMail():
         
     def get_folder_generator(self, folder_name, distinguished_folder=True, step=10):
         if distinguished_folder:
-            pass
+            folder = self.get_distinguished_folder(u"inbox")
+            folder_id = folder.xpath('//t:FolderId', namespaces=NAMESPACES)[0].get('Id')
+            item_count = folder.xpath('//t:ChildFolderCount', namespaces=NAMESPACES)[0].text
         else:
             folder = self.find_folder_named(folder_name)
             if not folder:
