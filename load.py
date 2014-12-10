@@ -14,11 +14,12 @@ PW_FN = 'pws'
 UN_FN = 'uns'
 URL_FN = 'urls'
 
-def load_exchange(url, username, password):
+def load_exchange(url, username, password, exchange_archive=False):
 	print "Loading messages from exchange for user %s" % username
 	fetcher = exchange_fetcher.ExchangeFetcher(url, username, password)
-	#fetcher.load_inbox()
-	fetcher.load_archive()
+	fetcher.load_inbox()
+	if exchange_archive:
+		fetcher.load_archive()
 	print "Finished loading exchange messages."
 
 def load_gmail(username, password):
@@ -44,8 +45,8 @@ def get_fetchers():
 	g_fetcher.login(uns['gmail'], pws['gmail'])
 
 	return (e_fetcher, g_fetcher)
-	
-def load_messages(exchange=True, gmail=True):
+
+def load_messages(exchange=True, gmail=True, exchange_archive=False):
 	pws = unpickle(PW_FN)
 	uns = unpickle(UN_FN)
 	urls = unpickle(URL_FN)
@@ -53,7 +54,7 @@ def load_messages(exchange=True, gmail=True):
 
 	if exchange:
 		start_exchange = time.time()
-		load_exchange(urls['exchange'], uns['exchange'], pws['exchange'])
+		load_exchange(urls['exchange'], uns['exchange'], pws['exchange'], exchange_archive)
 	if gmail:
 		start_gmail = time.time()
 		load_gmail(uns['gmail'], pws['gmail'])
