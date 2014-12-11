@@ -45,10 +45,16 @@ class ExchangeFetcher():
 		print "There are {} db messages in the inbox.".format(len(db_inbox_messages))
 		# need some way to check this
 
-	def load_archive(self):
+	# if you set stop_after_skipping, it will stop loading after encountering stop_after_skipping consecutive
+	# messages that are already in the database.  This should eventually be replaced by an actual sync solution
+	def load_archive(self, stop_after_skipping=0):
 		archive = self.exchange.get_archive()
+		skipped_messages = 0
 		for message in archive:
-			self.load_item(message, inbox=False)
+			m, skipped = self.load_item(message, inbox=False)
+			skipped_messages = skipped and skipped_messages+1 or 0
+			if stop_after_skipping > 0 and skipped_messages > stop_after_skipping:
+				break
 
 	def walk_message(self, mime_message, db_message):
 		def parse_attachment(message_part):
