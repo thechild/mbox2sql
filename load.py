@@ -73,6 +73,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-ne', '--noexchange', dest='exchange', action='store_false')
 	parser.add_argument('-ng', '--nogmail', dest='gmail', action='store_false')
+	parser.add_argument('-ea', '--exchangearchive', dest='earchive', action='store_true')
 	args = parser.parse_args()
 
-	load_messages(exchange=args.exchange, gmail=args.gmail)
+	load_messages(exchange=args.exchange, gmail=args.gmail, exchange_archive=args.earchive)
