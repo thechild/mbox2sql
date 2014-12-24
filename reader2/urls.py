@@ -12,7 +12,7 @@ urlpatterns = patterns('',
     #url(r'todo/(?P<todo_id>\d+)/$', views.view_todo, name="view_todo"),
     #url(r'conversation/(?P<conversation_id>\d+)/$', views.view_conversation, name="view_conversation"),
 
-    url(r'incoming/$', views.incoming_list, name="incoming_list"),
+    url(r'inbox/$', views.inbox_list, name="inbox_list"),
     #url(r'todos/$', views.todo_list, name="todo_list"),
     #url(r'other/$', views.other_list, name="other_list"),
 )
