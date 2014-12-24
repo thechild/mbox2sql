@@ -48,8 +48,16 @@ class ExchangeFetcher():
 
     # if you set stop_after_skipping, it will stop loading after encountering stop_after_skipping consecutive
     # messages that are already in the database.  This should eventually be replaced by an actual sync solution
-    def load_archive(self, stop_after_skipping=0):
-        archive = self.exchange.get_archive()
+    def load_archive(self, stop_after_skipping=0, stop_date=None):
+        self.load_named_folder(u"Archive", stop_after_skipping, stop_date)
+
+    def load_all_others(self):
+        self.load_named_folder(u"Sent Items")
+        self.load_named_folder(u"Deleted Items")
+        # this will fail if there are multiple folders with either of these names...
+
+    def load_named_folder(self, folder_name, stop_after_skipping=0, stop_date=None):
+        folder = self.exchange.get_named_folder(folder_name)
         skipped_messages = 0
         for message in folder:
             if self.is_already_loaded(message.item_id):

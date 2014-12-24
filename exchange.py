@@ -117,8 +117,18 @@ class ExchangeMail():
             for id in ids:
                 yield MessageItem(folder_id or folder_name, id.get('Id'), self)
 
+    def get_inbox(self):
+        return self.get_folder_generator(u"inbox")
+
+    def get_named_folder(self, folder_name):
+        return self.get_folder_generator(folder_name, distinguished_folder=False)
+
+    # I could cache all these in the db account object...
     def get_archive(self):
         return self.get_folder_generator(u"Archive", distinguished_folder=False)
 
-    def get_inbox(self):
-        return self.get_folder_generator(u"inbox")
+    def get_sent_items(self):
+        return self.get_folder_generator(u"Sent Items", distinguished_folder=False)
+
+    def get_deleted_items(self):
+        return self.get_folder_generator(u"Deleted Items", distinguished_folder=False)
