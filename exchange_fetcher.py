@@ -25,7 +25,8 @@ class ExchangeFetcher():
         inbox_messages = []
         pulled_messages = 0
         for message in inbox:
-            m, new = self.load_item(message, inbox=True)
+            new = self.is_already_loaded(message.item_id)
+            m = self.load_item(message, inbox=True)
             if new:
                 pulled_messages += 1
             inbox_messages.append(m)
@@ -50,9 +51,12 @@ class ExchangeFetcher():
     def load_archive(self, stop_after_skipping=0):
         archive = self.exchange.get_archive()
         skipped_messages = 0
-        for message in archive:
-            m, skipped = self.load_item(message, inbox=False)
-            skipped_messages = skipped and skipped_messages+1 or 0
+        for message in folder:
+            if self.is_already_loaded(message.item_id):
+                skipped_messages += 1
+            else:
+                # TODO check stop_date
+                self.load_item(message, inbox=False)
             if stop_after_skipping > 0 and skipped_messages > stop_after_skipping:
                 break
 
@@ -146,7 +150,7 @@ class ExchangeFetcher():
         existing_messages = Message.objects.filter(account=self.account, message_id=raw_item.item_id)
         if existing_messages.exists():
             # should probably set flags, but not going to to avoid network hit
-            return (existing_messages[0], False)
+            return existing_messages[0]
 
         # now pull from the network
         item = raw_item.processed_message()
@@ -198,7 +202,7 @@ class ExchangeFetcher():
             set_flags(message, m)
 
             m.save()
-            return (m, True)
+            return m
         else:
             print "One message failed to load: {}".format(item[0])
-            return (None, True)
+            return None
