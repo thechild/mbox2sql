@@ -164,7 +164,11 @@ class ExchangeFetcher():
         item = raw_item.processed_message()
 
         if item['m:GetItemResponseMessage']['@ResponseClass'] == u'Success':
-            message = item['m:GetItemResponseMessage']['m:Items']['t:Message']
+            if 't:Message' in item['m:GetItemResponseMessage']['m:Items'].keys():
+                message = item['m:GetItemResponseMessage']['m:Items']['t:Message']
+            elif 't:MeetingRequest' in item['m:GetItemResponseMessage']['m:Items'].keys():
+                message = item['m:GetItemResponseMessage']['m:Items']['t:MeetingRequest']
+                # not really sure how to handle this
             
             # maybe use this for attachments? or pull them from exchange somehow?
             e_message = email.message_from_string(message['t:MimeContent']['#text'].decode('base64'))
