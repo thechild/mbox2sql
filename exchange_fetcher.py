@@ -57,6 +57,7 @@ class ExchangeFetcher():
         # this will fail if there are multiple folders with either of these names...
 
     def load_named_folder(self, folder_name, stop_after_skipping=0, stop_date=None):
+        print "Finding folder named {}".format(folder_name)
         folder = self.exchange.get_named_folder(folder_name)
         skipped_messages = 0
         for message in folder:

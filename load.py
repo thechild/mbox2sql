@@ -20,6 +20,7 @@ def load_exchange(url, username, password, exchange_archive=False):
 	fetcher.load_inbox()
 	if exchange_archive:
 		fetcher.load_archive()
+		fetcher.load_all_others()
 	print "Finished loading exchange messages."
 
 def load_gmail(username, password):
